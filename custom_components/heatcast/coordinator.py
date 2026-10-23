@@ -98,6 +98,8 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
         self.model = Model(Params(), [])
         self._unsub: list[CALLBACK_TYPE] = []
         self._test_timer: CALLBACK_TYPE | None = None
+        # When an entity that does not exist (yet) was first looked up; kept until it appears.
+        self._absent_since: dict[str, datetime] = {}
 
     # Configuration views
 
@@ -149,7 +151,10 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
         self.model = Model(self._params(), self._room_configs(), state)
 
         now = dt_util.now()
-        await self._async_refresh_forecast(now)
+        # The weather integration may still be starting; do not hold up Home Assistant for it.
+        self.entry.async_create_background_task(
+            self.hass, self._async_refresh_forecast(now), name=f"{DOMAIN} first forecast"
+        )
         inputs = self._read_inputs(now)
         self.model.prime(inputs)
         self.async_set_updated_data(self.model.evaluate(inputs, now))
@@ -195,8 +200,12 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
 
     def _reading(self, entity_id: str, now: datetime) -> RoomReading:
         state = self.hass.states.get(entity_id)
+        # During startup the sensor's integration may not have created the entity yet;
+        # that counts as a dropout, so the room keeps its last value for the hold time.
         if state is None:
-            return RoomReading(value=None, age_s=None, missing_s=None)
+            absent_since = self._absent_since.setdefault(entity_id, now)
+            return RoomReading(value=None, age_s=None, missing_s=(now - absent_since).total_seconds())
+        self._absent_since.pop(entity_id, None)
         missing_s = None
         if state.state in MISSING_STATES:
             missing_s = (now - state.last_changed).total_seconds()

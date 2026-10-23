@@ -317,3 +317,20 @@ async def test_panel_edits_sources_and_rooms(hass: HomeAssistant, boiler, hass_w
     assert (await client.receive_json())["success"]
     await hass.async_block_till_done()
     assert room_id not in hass.config_entries.async_get_entry(entry.entry_id).subentries
+
+
+async def test_room_holds_value_while_sensor_entity_is_absent(hass: HomeAssistant, boiler) -> None:
+    """At startup a room sensor may not exist yet; its filtered value must survive the step."""
+    entry = await run_wizard(hass)
+    coordinator = entry.runtime_data
+    before = dict(coordinator.model.state.filtered)
+    assert all(value is not None for value in before.values())
+
+    hass.states.async_remove("sensor.living")
+    base = dt_util.now().replace(second=0, microsecond=0)
+    base += timedelta(minutes=5 - base.minute % 5)
+    async_fire_time_changed(hass, base)
+    await hass.async_block_till_done()
+
+    assert coordinator.model.state.filtered == before
+    assert coordinator.data.room.coverage == 1.0

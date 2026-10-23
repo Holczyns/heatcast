@@ -21,7 +21,7 @@ export class HeatCastHome extends LitElement {
     return numberState(this.hass, this.entry.entities[key]);
   }
 
-  private fmt(value: number | undefined, digits = 1): string {
+  private fmt(value: number | null | undefined, digits = 1): string {
     return formatNumber(LANGUAGE, value, digits);
   }
 
@@ -39,8 +39,8 @@ export class HeatCastHome extends LitElement {
     const t = this.localize;
     const climateId = this.entry.entities.thermostat;
     const climate = this.hass.states[climateId];
-    const current = climate?.attributes.current_temperature as number | undefined;
-    const target = climate?.attributes.temperature as number | undefined;
+    const current = (climate?.attributes.current_temperature ?? undefined) as number | undefined;
+    const target = (climate?.attributes.temperature ?? undefined) as number | undefined;
     const heatingOn = climate?.state === "heat";
     const control = isOn(this.hass, this.entry.entities.control);
     const demand = isOn(this.hass, this.entry.entities.demand);
@@ -245,8 +245,8 @@ export class HeatCastHome extends LitElement {
     `;
   }
 
-  private setTarget(entityId: string, current: number | undefined, step: number): void {
-    if (current === undefined) return;
+  private setTarget(entityId: string, current: number | null | undefined, step: number): void {
+    if ((current === null) || (current === undefined)) return;
     this.hass.callService("climate", "set_temperature", { entity_id: entityId, temperature: current + step });
   }
 

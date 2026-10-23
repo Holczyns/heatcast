@@ -162,8 +162,9 @@ export function localizer(): Localize {
   };
 }
 
-export function formatNumber(language: string, value: number | undefined, digits = 1): string {
-  if (value === undefined) return "–";
+/** Home Assistant reports a missing value as null, an absent attribute as undefined. */
+export function formatNumber(language: string, value: number | null | undefined, digits = 1): string {
+  if ((value === null) || (value === undefined) || !Number.isFinite(value)) return "–";
   return value.toLocaleString(language, { minimumFractionDigits: digits, maximumFractionDigits: digits });
 }
 
