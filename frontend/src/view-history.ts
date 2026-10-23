@@ -1,7 +1,7 @@
 import { LitElement, css, html, nothing, svg } from "lit";
 import { type EntryInfo, type HistoryPoint, fetchHistory } from "./api";
 import { type HomeAssistant, type LovelaceCard, createCard } from "./ha";
-import { type Localize, type TranslationKey, formatNumber } from "./localize";
+import { LANGUAGE, type Localize, type TranslationKey, formatNumber } from "./localize";
 import { shared } from "./styles";
 
 interface Range {
@@ -188,7 +188,7 @@ export class HeatCastHistory extends LitElement {
 
   private renderBars(title: string, days: DailyHours[] | undefined, colour: string) {
     if (!days) return nothing;
-    const lang = this.hass.language;
+    const lang = LANGUAGE;
     const max = Math.max(6, ...days.map((d) => d.hours));
     const width = 100 / days.length;
     const total = days.reduce((sum, d) => sum + d.hours, 0);

@@ -39,7 +39,7 @@ It writes the result to any number entity your boiler reads, such as `selflowtem
   external temperature.
 - **Eco setback** applied outside a schedule.
 - **Test mode** that sends a fixed flow temperature to check that the boiler accepts it.
-- Polish and English translations.
+- **Built-in guide** covering the switch-over, failure behaviour and curve tuning.
 
 ![Settings tab with the live heating curve](docs/images/panel-settings.png)
 

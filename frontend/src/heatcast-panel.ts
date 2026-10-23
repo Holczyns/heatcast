@@ -34,14 +34,9 @@ class HeatCastPanel extends LitElement {
   tab = "home";
   error?: string;
   private loading = false;
-  private localize: Localize = localizer("en");
-  private language = "";
+  private localize: Localize = localizer();
 
   protected willUpdate(changed: Map<string, unknown>): void {
-    if (changed.has("hass") && this.hass && this.hass.language !== this.language) {
-      this.language = this.hass.language;
-      this.localize = localizer(this.language);
-    }
     if (changed.has("hass") && this.hass && !this.entries && !this.loading) {
       this.load();
     }
@@ -114,7 +109,7 @@ class HeatCastPanel extends LitElement {
       case "history":
         return html`<heatcast-history .hass=${props.hass} .entry=${entry} .localize=${props.localize}></heatcast-history>`;
       case "guide":
-        return html`<heatcast-guide language=${this.hass.language}></heatcast-guide>`;
+        return html`<heatcast-guide></heatcast-guide>`;
       case "settings":
         return html`<heatcast-settings .hass=${props.hass} .entry=${entry} .localize=${props.localize}></heatcast-settings>`;
       default:

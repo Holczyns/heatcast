@@ -1,7 +1,7 @@
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 import type { EntryInfo, RoomInfo } from "./api";
 import { type HomeAssistant, isOn, numberState } from "./ha";
-import { type Localize, formatNumber, formatSigned } from "./localize";
+import { LANGUAGE, type Localize, formatNumber, formatSigned } from "./localize";
 import { shared } from "./styles";
 
 const TARGET_STEP = 0.5;
@@ -22,7 +22,7 @@ export class HeatCastHome extends LitElement {
   }
 
   private fmt(value: number | undefined, digits = 1): string {
-    return formatNumber(this.hass.language, value, digits);
+    return formatNumber(LANGUAGE, value, digits);
   }
 
   render() {
@@ -124,7 +124,7 @@ export class HeatCastHome extends LitElement {
 
   private renderBreakdown(): TemplateResult {
     const t = this.localize;
-    const lang = this.hass.language;
+    const lang = LANGUAGE;
     const demand = isOn(this.hass, this.entry.entities.demand);
     const damped = this.num("outdoor_damped");
     const effective = this.num("outdoor_effective");
@@ -190,7 +190,7 @@ export class HeatCastHome extends LitElement {
               <span class="chip ${valid ? "" : "heat"}">${valid ? `${t("forecast")} · ${t("next_hours", { h: horizon ?? 4 })}` : t("forecast_stale")}</span>
             </div>
             <div class="forecast-grid">
-              <div><ha-icon icon="mdi:thermometer"></ha-icon><span>${t("forecast_change")}</span><b>${deltaValue === undefined ? "–" : formatSigned(this.hass.language, deltaValue)} K</b></div>
+              <div><ha-icon icon="mdi:thermometer"></ha-icon><span>${t("forecast_change")}</span><b>${deltaValue === undefined ? "–" : formatSigned(LANGUAGE, deltaValue)} K</b></div>
               <div><ha-icon icon="mdi:cloud-outline"></ha-icon><span>${t("cloud")}</span><b>${this.fmt(this.num("forecast_cloud"), 0)} %</b></div>
               <div><ha-icon icon="mdi:weather-windy"></ha-icon><span>${t("wind")}</span><b>${this.fmt(this.num("forecast_wind"), 0)} km/h</b></div>
               <div><ha-icon icon="mdi:white-balance-sunny"></ha-icon><span>${t("daylight")}</span><b>${this.fmt(this.num("forecast_daylight"), 0)} %</b></div>

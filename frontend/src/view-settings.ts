@@ -3,7 +3,7 @@ import { type EntryInfo, setIndividualRooms } from "./api";
 import type { CurveParams } from "./curve-chart";
 import "./curve-chart";
 import { type HomeAssistant, fireEvent, isOn, numberState } from "./ha";
-import type { Localize, TranslationKey } from "./localize";
+import { LANGUAGE, type Localize, type TranslationKey } from "./localize";
 import { shared } from "./styles";
 
 const GROUPS: [TranslationKey, string[]][] = [
@@ -41,7 +41,13 @@ export class HeatCastSettings extends LitElement {
     return html`
       <div class="grid">
         ${this.renderBoiler()} ${this.renderCurve()}
-        ${GROUPS.map(([title, keys]) => this.renderGroup(title, keys.map((key) => this.entry.entities[key])))}
+        ${GROUPS.map(([title, keys]) =>
+          this.renderGroup(
+            title,
+            keys.map((key) => this.entry.entities[key]),
+            keys.map((key) => this.paramLabel(key)),
+          ),
+        )}
         ${this.renderGroup(
           "settings.rooms",
           this.entry.rooms.map((room) => room.entities.weight),
@@ -79,7 +85,7 @@ export class HeatCastSettings extends LitElement {
     };
     return html`
       <div class="number">
-        <span class="label">${label ?? this.shortName(state.attributes.friendly_name ?? entityId)}</span>
+        <span class="label">${label ?? entityId}</span>
         <span class="stepper">
           <button class="round mini" ?disabled=${value <= min} @click=${() => set(value - step)}>−</button>
           <input
@@ -97,11 +103,8 @@ export class HeatCastSettings extends LitElement {
     `;
   }
 
-  /** Entity names carry the device name in front; inside the panel it is noise. */
-  private shortName(friendlyName: string): string {
-    const prefix = `${this.entry.title} `;
-    const name = friendlyName.startsWith(prefix) ? friendlyName.slice(prefix.length) : friendlyName;
-    return name.charAt(0).toUpperCase() + name.slice(1);
+  private paramLabel(key: string): string {
+    return this.localize(`p.${key}` as TranslationKey);
   }
 
   private renderCurve(): TemplateResult {
@@ -118,10 +121,10 @@ export class HeatCastSettings extends LitElement {
         <heatcast-curve-chart
           .params=${params}
           .outdoor=${this.num("outdoor_effective")}
-          language=${this.hass.language}
+          language=${LANGUAGE}
         ></heatcast-curve-chart>
         <p class="muted small">${this.localize("settings.curve_hint")}</p>
-        ${CURVE_KEYS.map((key) => this.renderNumber(this.entry.entities[key]))}
+        ${CURVE_KEYS.map((key) => this.renderNumber(this.entry.entities[key], this.paramLabel(key)))}
       </section>
     `;
   }
@@ -178,7 +181,7 @@ export class HeatCastSettings extends LitElement {
         ${this.renderToggle("settings.test_mode", "settings.test_mode_hint", testMode, (on) =>
           switchTo(this.entry.entities.test_mode, on),
         )}
-        ${this.renderNumber(this.entry.entities.test_flow)}
+        ${this.renderNumber(this.entry.entities.test_flow, this.paramLabel("test_flow"))}
       </section>
     `;
   }
