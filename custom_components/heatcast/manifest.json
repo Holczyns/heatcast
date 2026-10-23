@@ -1,0 +1,20 @@
+{
+  "domain": "heatcast",
+  "name": "HeatCast",
+  "after_dependencies": [
+    "frontend",
+    "http",
+    "schedule",
+    "weather"
+  ],
+  "codeowners": [
+    "@Holczyns"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/Holczyns/heatcast",
+  "integration_type": "hub",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/Holczyns/heatcast/issues",
+  "requirements": [],
+  "version": "0.1.0"
+}

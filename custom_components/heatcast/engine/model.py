@@ -109,6 +109,21 @@ class Model:
         if forecast is not None:
             self.state.forecast = forecast
 
+    def prime(self, inputs: Inputs) -> None:
+        """Start filters and damping from the current readings where no state exists yet.
+
+        Without this a fresh install would show no house temperature and
+        no flow setpoint until the first five-minute step.
+        """
+        hold_s = self.params.sensor_hold_min * 60.0
+        for room in self.rooms:
+            if self.state.filtered.get(room.key) is not None:
+                continue
+            reading = inputs.readings.get(room.key, rooms.RoomReading(value=None, age_s=None))
+            self.state.filtered[room.key] = rooms.filter_step(reading, None, 0.0, hold_s)
+        if self.state.damped is None:
+            self.state.damped = weather.damp(None, inputs.outdoor, STATE_STEP_MIN, self.params.damping_tau_h)
+
     def step(self, inputs: Inputs, now: datetime, step_min: float = STATE_STEP_MIN) -> Snapshot:
         """Advance filter, damping and integral by one fixed step, then evaluate."""
         params = self.params

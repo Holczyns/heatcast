@@ -1,0 +1,230 @@
+{
+  "config": {
+    "abort": {
+      "reconfigure_successful": "Settings saved."
+    },
+    "error": {
+      "flow_range": "The minimum flow temperature has to be lower than the maximum."
+    },
+    "step": {
+      "user": {
+        "title": "New HeatCast controller",
+        "description": "HeatCast calculates the flow temperature for your boiler from the outdoor temperature, the weather forecast and the temperature in your rooms.\n\nPick the heat emitters on the circuit. This only sets starting values for the heating curve; every value can be changed later.",
+        "data": {
+          "name": "Name",
+          "heating_type": "Heat emitters"
+        }
+      },
+      "boiler": {
+        "title": "Boiler",
+        "description": "Where HeatCast sends the flow temperature. With EMS-ESP this is usually `number.boiler_selflowtemp` and `switch.boiler_heatingoff`.\n\nNothing is sent until you turn on **Boiler control**. Until then HeatCast only calculates, so you can compare it with your current setup first.",
+        "data": {
+          "flow_entity": "Flow temperature setpoint",
+          "block_entity": "Heating off switch",
+          "idle_flow": "Flow temperature without heating demand",
+          "flow_sensor": "Measured flow temperature",
+          "flame_sensor": "Burner on",
+          "dhw_sensor": "Hot water heating"
+        },
+        "data_description": {
+          "flow_entity": "Number entity the boiler reads the requested flow temperature from. It is refreshed every 30 seconds.",
+          "block_entity": "Optional. Turned on when there is no heating demand, off otherwise.",
+          "idle_flow": "Sent instead when there is no heating demand and no heating off switch is set.",
+          "flow_sensor": "Optional, shown on the card.",
+          "flame_sensor": "Optional, used to show when the boiler is actually heating.",
+          "dhw_sensor": "Optional, shown on the card."
+        }
+      },
+      "climate": {
+        "title": "Weather",
+        "description": "The outdoor sensor drives the heating curve. A weather service with an hourly forecast lets HeatCast react to coming temperature changes, sun and wind before the house feels them.",
+        "data": {
+          "outdoor_sensor": "Outdoor temperature",
+          "weather": "Weather forecast",
+          "schedule": "Comfort schedule"
+        },
+        "data_description": {
+          "outdoor_sensor": "Preferably the boiler's own outdoor sensor.",
+          "weather": "Optional. Needs a weather service with an hourly forecast, such as Met.no.",
+          "schedule": "Optional. While the schedule is on, the comfort temperature applies, otherwise eco. Without a schedule the comfort temperature always applies."
+        }
+      },
+      "curve": {
+        "title": "Heating curve",
+        "description": "The curve gives the flow temperature for a room temperature of 20 °C at a given outdoor temperature. Room sensors correct it later by a few kelvin.",
+        "data": {
+          "design_temp": "Flow temperature at the coldest day",
+          "outdoor_min": "Coldest outdoor temperature",
+          "curve_exponent": "Curvature",
+          "curve_offset": "Shift",
+          "flow_min": "Minimum flow temperature",
+          "flow_max": "Maximum flow temperature",
+          "summer_temp": "Heating off above"
+        },
+        "data_description": {
+          "curve_exponent": "1.0 is a straight line. Underfloor heating about 1.1, radiators about 1.3.",
+          "curve_offset": "Moves the whole curve up or down.",
+          "summer_temp": "Heating stops when the outdoor temperature, with the forecast taken into account, is above this value."
+        }
+      },
+      "curve_check": {
+        "title": "Check the curve",
+        "description": "Flow temperature for a room at 20 °C:\n\n{preview}\n\nIf the values look right, add the rooms.",
+        "menu_options": {
+          "room": "Looks right, add rooms",
+          "curve": "Change the curve"
+        }
+      },
+      "room": {
+        "title": "Room",
+        "description": "Each room has a temperature sensor and a weight. The controller keeps the weighted average of all rooms at the target; a room with weight 0 is only shown.",
+        "data": {
+          "name": "Name",
+          "sensor": "Temperature sensor",
+          "weight": "Weight",
+          "offset": "Target offset",
+          "valve": "Radiator valve",
+          "valve_temperature": "Valve temperature input"
+        },
+        "data_description": {
+          "weight": "How much the room counts, 0 to 1.",
+          "offset": "How much warmer (+) or cooler (−) this room should be than the house setpoint.",
+          "valve": "Optional thermostatic radiator valve. HeatCast sets it to the room target every 5 minutes while boiler control is on.",
+          "valve_temperature": "Optional number entity of the valve for an external temperature. HeatCast writes the room sensor value to it."
+        }
+      },
+      "rooms": {
+        "title": "Rooms",
+        "description": "Added: {rooms}",
+        "menu_options": {
+          "room": "Add another room",
+          "finish": "Finish"
+        }
+      },
+      "reconfigure": {
+        "title": "Boiler and weather",
+        "description": "Change the entities HeatCast reads and writes. Curve and controller values are changed on the device page.",
+        "data": {
+          "flow_entity": "Flow temperature setpoint",
+          "block_entity": "Heating off switch",
+          "idle_flow": "Flow temperature without heating demand",
+          "flow_sensor": "Measured flow temperature",
+          "flame_sensor": "Burner on",
+          "dhw_sensor": "Hot water heating",
+          "outdoor_sensor": "Outdoor temperature",
+          "weather": "Weather forecast",
+          "schedule": "Comfort schedule"
+        }
+      }
+    }
+  },
+  "config_subentries": {
+    "room": {
+      "entry_type": "Room",
+      "initiate_flow": {
+        "user": "Add room",
+        "reconfigure": "Edit room"
+      },
+      "abort": {
+        "reconfigure_successful": "Room saved."
+      },
+      "step": {
+        "user": {
+          "title": "New room",
+          "description": "Each room has a temperature sensor and a weight. The controller keeps the weighted average of all rooms at the target; a room with weight 0 is only shown.",
+          "data": {
+            "name": "Name",
+            "sensor": "Temperature sensor",
+            "weight": "Weight",
+            "offset": "Target offset",
+            "valve": "Radiator valve",
+            "valve_temperature": "Valve temperature input"
+          },
+          "data_description": {
+            "weight": "How much the room counts, 0 to 1.",
+            "offset": "How much warmer (+) or cooler (−) this room should be than the house setpoint.",
+            "valve": "Optional thermostatic radiator valve. HeatCast sets it to the room target every 5 minutes while boiler control is on.",
+            "valve_temperature": "Optional number entity of the valve for an external temperature. HeatCast writes the room sensor value to it."
+          }
+        },
+        "reconfigure": {
+          "title": "Edit room",
+          "description": "Weight and offset are changed on the room's device page.",
+          "data": {
+            "name": "Name",
+            "sensor": "Temperature sensor",
+            "valve": "Radiator valve",
+            "valve_temperature": "Valve temperature input"
+          }
+        }
+      }
+    }
+  },
+  "selector": {
+    "heating_type": {
+      "options": {
+        "underfloor": "Underfloor heating",
+        "mixed": "Underfloor and radiators on one circuit",
+        "radiators": "Radiators"
+      }
+    }
+  },
+  "entity": {
+    "binary_sensor": {
+      "demand": { "name": "Heating demand" },
+      "forecast_valid": { "name": "Forecast up to date" }
+    },
+    "number": {
+      "comfort_temp": { "name": "Comfort temperature" },
+      "eco_temp": { "name": "Eco temperature" },
+      "room_rate_max": { "name": "Room filter rate" },
+      "sensor_hold_min": { "name": "Sensor dropout hold" },
+      "damping_tau_h": { "name": "Building time constant" },
+      "forecast_horizon_h": { "name": "Forecast horizon" },
+      "forecast_weight": { "name": "Forecast weight" },
+      "k_solar": { "name": "Sun gain" },
+      "k_wind": { "name": "Wind loss" },
+      "wind_ref": { "name": "Wind threshold" },
+      "kp": { "name": "Proportional gain" },
+      "ti_min": { "name": "Integral time" },
+      "design_temp": { "name": "Curve design flow temperature" },
+      "outdoor_min": { "name": "Curve design outdoor temperature" },
+      "curve_exponent": { "name": "Curve curvature" },
+      "curve_offset": { "name": "Curve shift" },
+      "summer_temp": { "name": "Heating off above" },
+      "flow_min": { "name": "Minimum flow temperature" },
+      "flow_max": { "name": "Maximum flow temperature" },
+      "integral": { "name": "Integral" },
+      "outdoor_damped": { "name": "Damped outdoor temperature" },
+      "test_flow": { "name": "Test flow temperature" },
+      "room_weight": { "name": "Weight" },
+      "room_offset": { "name": "Target offset" }
+    },
+    "sensor": {
+      "flow_setpoint": { "name": "Flow temperature setpoint" },
+      "curve_flow": { "name": "Curve flow temperature" },
+      "room_temperature": { "name": "House temperature" },
+      "setpoint": { "name": "House setpoint" },
+      "outdoor_effective": { "name": "Effective outdoor temperature" },
+      "outdoor_switch": { "name": "Outdoor temperature for summer cut-off" },
+      "room_error": { "name": "Room deviation" },
+      "room_correction": { "name": "Room correction" },
+      "proportional": { "name": "Proportional term" },
+      "forecast_effect": { "name": "Forecast effect" },
+      "solar_correction": { "name": "Sun correction" },
+      "wind_correction": { "name": "Wind correction" },
+      "forecast_delta": { "name": "Forecast temperature change" },
+      "room_coverage": { "name": "Room sensor coverage" },
+      "forecast_cloud": { "name": "Forecast cloud cover" },
+      "forecast_wind": { "name": "Forecast wind" },
+      "forecast_daylight": { "name": "Forecast daylight" },
+      "forecast_updated": { "name": "Forecast updated" },
+      "room_filtered": { "name": "Filtered temperature" },
+      "room_target": { "name": "Target temperature" }
+    },
+    "switch": {
+      "control": { "name": "Boiler control" },
+      "test_mode": { "name": "Boiler test mode" }
+    }
+  }
+}
