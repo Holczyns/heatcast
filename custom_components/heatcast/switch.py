@@ -18,13 +18,10 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
-    async_add_entities(
-        [
-            ControlSwitch(coordinator, "control"),
-            RoomSyncSwitch(coordinator, "room_sync"),
-            TestModeSwitch(coordinator, "test_mode"),
-        ]
-    )
+    switches: list[SwitchEntity] = [ControlSwitch(coordinator, "control"), TestModeSwitch(coordinator, "test_mode")]
+    if coordinator.individual_rooms:
+        switches.append(RoomSyncSwitch(coordinator, "room_sync"))
+    async_add_entities(switches)
 
 
 class ControlSwitch(HeatCastEntity, SwitchEntity):

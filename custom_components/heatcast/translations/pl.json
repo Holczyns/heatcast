@@ -318,5 +318,16 @@
         "name": "Synchronizacja pokoi"
       }
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Ustawienia HeatCast",
+        "description": "Indywidualne temperatury pokoi dodają termostat każdemu pokojowi i przełącznik **Synchronizacja pokoi**. Przy jednym obiegu grzewczym bez głowic na grzejnikach regulator wyznacza kompromis według wag, więc nie każdy pokój osiągnie swoją temperaturę.",
+        "data": {
+          "individual_rooms": "Indywidualne temperatury pokoi"
+        }
+      }
+    }
   }
 }

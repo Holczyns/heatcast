@@ -31,6 +31,7 @@ from .const import (
     CONF_BLOCK_ENTITY,
     CONF_FLOW_ENTITY,
     CONF_IDLE_FLOW,
+    CONF_INDIVIDUAL_ROOMS,
     CONF_OUTDOOR_SENSOR,
     CONF_PARAMS,
     CONF_SCHEDULE,
@@ -108,6 +109,10 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
     @property
     def options(self) -> dict[str, Any]:
         return dict(self.entry.data)
+
+    @property
+    def individual_rooms(self) -> bool:
+        return self.entry.options.get(CONF_INDIVIDUAL_ROOMS, False)
 
     @property
     def rooms(self) -> dict[str, Any]:
@@ -211,7 +216,8 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
             outdoor=_number(outdoor_state.state) if outdoor_state else None,
             comfort_active=comfort_active,
             enabled=self.heating_enabled,
-            synchronised=self.rooms_synchronised,
+            # Without the option every room follows the house setpoint.
+            synchronised=self.rooms_synchronised or not self.individual_rooms,
         )
 
     async def _async_refresh_forecast(self, now: datetime) -> None:

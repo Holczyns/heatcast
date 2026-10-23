@@ -186,8 +186,32 @@ async def test_valve_follows_room_target_on_step(hass: HomeAssistant, boiler) ->
     assert calls[-1].data == {"entity_id": "climate.kids_valve", "temperature": 20.0}
 
 
+async def enable_individual_rooms(hass: HomeAssistant, entry: config_entries.ConfigEntry) -> None:
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    await hass.config_entries.options.async_configure(result["flow_id"], {"individual_rooms": True})
+    await hass.async_block_till_done()
+
+
+async def test_room_thermostats_only_with_option(hass: HomeAssistant, boiler) -> None:
+    entry = await run_wizard(hass)
+    registry = er.async_get(hass)
+    climates = [e for e in registry.entities.values() if (e.platform == DOMAIN) and (e.domain == "climate")]
+    assert len(climates) == 1
+    assert hass.states.get("climate.living_room") is None
+
+    await enable_individual_rooms(hass, entry)
+    assert hass.states.get("climate.living_room") is not None
+    entity_id(hass, "switch", "_room_sync")
+
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    await hass.config_entries.options.async_configure(result["flow_id"], {"individual_rooms": False})
+    await hass.async_block_till_done()
+    assert hass.states.get("climate.living_room") is None
+
+
 async def test_room_target_leaves_sync(hass: HomeAssistant, boiler) -> None:
     entry = await run_wizard(hass)
+    await enable_individual_rooms(hass, entry)
     rooms = {subentry.title: subentry.subentry_id for subentry in entry.subentries.values()}
     living = entity_id(hass, "climate", f"{rooms['Living room']}_thermostat")
     bedroom = entity_id(hass, "climate", f"{rooms['Bedroom']}_thermostat")

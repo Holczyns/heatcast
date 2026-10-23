@@ -28,6 +28,8 @@ async def async_setup_entry(
 ) -> None:
     coordinator = entry.runtime_data
     async_add_entities([HouseClimate(coordinator, "thermostat")])
+    if not coordinator.individual_rooms:
+        return
     for room in coordinator.rooms.values():
         async_add_entities([RoomClimate(coordinator, room, "thermostat")], config_subentry_id=room.subentry_id)
 
@@ -100,6 +102,8 @@ class RoomClimate(HeatCastRoomEntity, _ThermostatBase):
 
     def __init__(self, coordinator: HeatCastCoordinator, room: ConfigSubentry, key: str) -> None:
         super().__init__(coordinator, room, key)
+        # Named after the room device alone, giving climate.<room>.
+        self._attr_translation_key = None
         self._sensor = room.data[CONF_SENSOR]
 
     @property

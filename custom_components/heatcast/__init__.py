@@ -7,6 +7,7 @@ from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.typing import ConfigType
 
 from .const import DOMAIN
@@ -38,6 +39,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: HeatCastConfigEntry) -> 
     controller = dr.async_get(hass).async_get_or_create(config_entry_id=entry.entry_id, **controller_device_info(entry))
     coordinator.device_id = controller.id
     await coordinator.async_setup()
+    if not coordinator.individual_rooms:
+        _remove_individual_room_entities(hass, entry)
     entry.runtime_data = coordinator
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     # Adding, editing or removing a room changes the entity set.
@@ -50,6 +53,16 @@ async def async_unload_entry(hass: HomeAssistant, entry: HeatCastConfigEntry) ->
     if unloaded:
         await entry.runtime_data.async_shutdown()
     return unloaded
+
+
+def _remove_individual_room_entities(hass: HomeAssistant, entry: HeatCastConfigEntry) -> None:
+    """Room thermostats and the sync switch exist only while individual rooms are enabled."""
+    registry = er.async_get(hass)
+    room_thermostats = {f"{subentry_id}_thermostat" for subentry_id in entry.subentries}
+    for entity in er.async_entries_for_config_entry(registry, entry.entry_id):
+        is_room_feature = (entity.unique_id in room_thermostats) or (entity.unique_id == f"{entry.entry_id}_room_sync")
+        if is_room_feature:
+            registry.async_remove(entity.entity_id)
 
 
 async def _async_reload(hass: HomeAssistant, entry: HeatCastConfigEntry) -> None:

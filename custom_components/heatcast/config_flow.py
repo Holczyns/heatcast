@@ -11,6 +11,7 @@ from homeassistant.config_entries import (
     ConfigFlowResult,
     ConfigSubentryData,
     ConfigSubentryFlow,
+    OptionsFlow,
     SubentryFlowResult,
 )
 from homeassistant.const import CONF_NAME
@@ -35,6 +36,7 @@ from .const import (
     CONF_FLOW_SENSOR,
     CONF_HEATING_TYPE,
     CONF_IDLE_FLOW,
+    CONF_INDIVIDUAL_ROOMS,
     CONF_OUTDOOR_SENSOR,
     CONF_PARAMS,
     CONF_SCHEDULE,
@@ -177,6 +179,12 @@ class HeatCastConfigFlow(ConfigFlow, domain=DOMAIN):
     def async_get_supported_subentry_types(cls, config_entry: ConfigEntry) -> dict[str, type[ConfigSubentryFlow]]:
         return {SUBENTRY_ROOM: RoomSubentryFlow}
 
+    @staticmethod
+    @callback
+    @override
+    def async_get_options_flow(config_entry: ConfigEntry) -> HeatCastOptionsFlow:
+        return HeatCastOptionsFlow()
+
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
             self._data[CONF_NAME] = user_input[CONF_NAME]
@@ -267,6 +275,17 @@ class HeatCastConfigFlow(ConfigFlow, domain=DOMAIN):
     @staticmethod
     def _reconfigurable_keys() -> tuple[str, ...]:
         return (*BOILER_SCHEMA_KEYS, CONF_OUTDOOR_SENSOR, CONF_WEATHER, CONF_SCHEDULE)
+
+
+class HeatCastOptionsFlow(OptionsFlow):
+    """Features that change the set of entities; the entry reloads after saving."""
+
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        if user_input is not None:
+            return self.async_create_entry(data=user_input)
+        current = self.config_entry.options.get(CONF_INDIVIDUAL_ROOMS, False)
+        schema = probatio.Schema({probatio.Required(CONF_INDIVIDUAL_ROOMS, default=current): bool})
+        return self.async_show_form(step_id="init", data_schema=schema)
 
 
 class RoomSubentryFlow(ConfigSubentryFlow):

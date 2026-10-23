@@ -20,6 +20,8 @@ CONF_WEATHER: Final = "weather"
 CONF_SCHEDULE: Final = "schedule"
 
 CONF_HEATING_TYPE: Final = "heating_type"
+# Option: rooms get their own thermostats and can leave the house setpoint.
+CONF_INDIVIDUAL_ROOMS: Final = "individual_rooms"
 CONF_PARAMS: Final = "params"
 
 # Room subentry

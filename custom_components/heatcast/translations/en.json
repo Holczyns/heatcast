@@ -318,5 +318,16 @@
         "name": "Room sync"
       }
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "HeatCast settings",
+        "description": "Individual room temperatures add a thermostat to every room and a **Room sync** switch. With a single heating circuit and no radiator valves the controller finds a weighted compromise, so not every room will reach its own temperature.",
+        "data": {
+          "individual_rooms": "Individual room temperatures"
+        }
+      }
+    }
   }
 }
