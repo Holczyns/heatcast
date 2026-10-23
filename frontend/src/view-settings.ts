@@ -4,6 +4,8 @@ import type { CurveParams } from "./curve-chart";
 import "./curve-chart";
 import { type HomeAssistant, fireEvent, isOn, numberState } from "./ha";
 import { LANGUAGE, type Localize, type TranslationKey } from "./localize";
+import { controlStyles, numberControl } from "./number-control";
+import "./setup-cards";
 import { shared } from "./styles";
 
 const GROUPS: [TranslationKey, string[]][] = [
@@ -40,7 +42,9 @@ export class HeatCastSettings extends LitElement {
     }
     return html`
       <div class="grid">
-        ${this.renderBoiler()} ${this.renderCurve()}
+        ${this.renderBoiler()}
+        <heatcast-sources-card .hass=${this.hass} .entry=${this.entry} .localize=${this.localize}></heatcast-sources-card>
+        ${this.renderCurve()}
         ${GROUPS.map(([title, keys]) =>
           this.renderGroup(
             title,
@@ -48,11 +52,7 @@ export class HeatCastSettings extends LitElement {
             keys.map((key) => this.paramLabel(key)),
           ),
         )}
-        ${this.renderGroup(
-          "settings.rooms",
-          this.entry.rooms.map((room) => room.entities.weight),
-          this.entry.rooms.map((room) => room.name),
-        )}
+        <heatcast-rooms-card .hass=${this.hass} .entry=${this.entry} .localize=${this.localize}></heatcast-rooms-card>
         ${this.renderFeatures()}
       </div>
       <p class="small">
@@ -65,42 +65,13 @@ export class HeatCastSettings extends LitElement {
     return html`
       <section class="card">
         <h2>${this.localize(title)}</h2>
-        ${entityIds.map((entityId, index) => (entityId ? this.renderNumber(entityId, labels?.[index]) : nothing))}
+        ${entityIds.map((entityId, index) => this.renderNumber(entityId, labels?.[index] ?? ""))}
       </section>
     `;
   }
 
-  private renderNumber(entityId: string, label?: string): TemplateResult {
-    const state = this.hass.states[entityId];
-    if (!state) return html``;
-    const value = Number.parseFloat(state.state);
-    const step = Number(state.attributes.step ?? 1);
-    const min = Number(state.attributes.min ?? -Infinity);
-    const max = Number(state.attributes.max ?? Infinity);
-    const digits = step < 0.01 ? 3 : step < 0.1 ? 2 : step < 1 ? 1 : 0;
-    const unit = state.attributes.unit_of_measurement ?? "";
-    const set = (next: number) => {
-      const rounded = Math.round(Math.max(Math.min(next, max), min) / step) * step;
-      this.hass.callService("number", "set_value", { entity_id: entityId, value: Number(rounded.toFixed(4)) });
-    };
-    return html`
-      <div class="number">
-        <span class="label">${label ?? entityId}</span>
-        <span class="stepper">
-          <button class="round mini" ?disabled=${value <= min} @click=${() => set(value - step)}>−</button>
-          <input
-            type="number"
-            .value=${Number.isFinite(value) ? value.toFixed(digits) : ""}
-            step=${step}
-            min=${min}
-            max=${max}
-            @change=${(event: Event) => set(Number.parseFloat((event.target as HTMLInputElement).value))}
-          />
-          <button class="round mini" ?disabled=${value >= max} @click=${() => set(value + step)}>+</button>
-          <span class="unit">${unit}</span>
-        </span>
-      </div>
-    `;
+  private renderNumber(entityId: string | undefined, label: string): TemplateResult {
+    return numberControl(this.hass, entityId, label);
   }
 
   private paramLabel(key: string): string {
@@ -201,6 +172,7 @@ export class HeatCastSettings extends LitElement {
 
   static styles = [
     shared,
+    controlStyles,
     css`
       /* Columns instead of a grid: cards of different height leave no holes. */
       .grid {
@@ -210,49 +182,6 @@ export class HeatCastSettings extends LitElement {
       .grid > section {
         break-inside: avoid;
         margin-bottom: var(--hc-gap);
-      }
-      .number,
-      .toggle-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 12px;
-        padding: 6px 0;
-      }
-      .label {
-        flex: 1;
-        min-width: 0;
-      }
-      .stepper {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-      }
-      .stepper input {
-        width: 64px;
-        padding: 4px 6px;
-        text-align: right;
-        border: 1px solid var(--divider-color);
-        border-radius: 6px;
-        background: transparent;
-        color: var(--primary-text-color);
-        font: inherit;
-        -moz-appearance: textfield;
-      }
-      .stepper input::-webkit-outer-spin-button,
-      .stepper input::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-      }
-      .unit {
-        width: 56px;
-        font-size: 0.8rem;
-        color: var(--hc-muted);
-      }
-      .round.mini {
-        width: 28px;
-        height: 28px;
-        font-size: 1rem;
       }
       .toggle {
         flex: none;
@@ -291,19 +220,6 @@ export class HeatCastSettings extends LitElement {
       }
       .confirm span {
         flex: 1;
-      }
-      button.text {
-        border: none;
-        background: transparent;
-        color: var(--primary-text-color);
-        padding: 6px 10px;
-        border-radius: 6px;
-        cursor: pointer;
-        font: inherit;
-      }
-      button.text.primary {
-        color: var(--primary-color);
-        font-weight: 500;
       }
       a {
         color: var(--primary-color);

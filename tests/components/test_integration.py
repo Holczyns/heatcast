@@ -254,3 +254,66 @@ async def test_panel_api_lists_entities(hass: HomeAssistant, boiler, hass_ws_cli
     assert (await client.receive_json())["success"]
     await hass.async_block_till_done()
     assert hass.states.get("climate.living_room") is not None
+
+
+async def test_panel_edits_sources_and_rooms(hass: HomeAssistant, boiler, hass_ws_client) -> None:
+    entry = await run_wizard(hass)
+    client = await hass_ws_client(hass)
+    hass.states.async_set("sensor.outdoor_2", "4.0", {"device_class": "temperature"})
+    hass.states.async_set("sensor.kids", "20.0", {"device_class": "temperature"})
+    hass.states.async_set("climate.kids_valve", "heat", {"temperature": 20.0})
+
+    await client.send_json(
+        {"id": 1, "type": "heatcast/update_sources", "entry_id": entry.entry_id, "flow_entity": "sensor.outdoor"}
+    )
+    response = await client.receive_json()
+    assert not response["success"]
+    assert "flow_entity" in response["error"]["message"]
+
+    await client.send_json(
+        {
+            "id": 2,
+            "type": "heatcast/update_sources",
+            "entry_id": entry.entry_id,
+            "flow_entity": FLOW,
+            "block_entity": None,
+            "outdoor_sensor": "sensor.outdoor_2",
+        }
+    )
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    entry = hass.config_entries.async_get_entry(entry.entry_id)
+    assert entry.data["outdoor_sensor"] == "sensor.outdoor_2"
+    assert "block_entity" not in entry.data
+    assert entry.data["params"]["curve_offset"] == -1.5
+
+    await client.send_json(
+        {"id": 3, "type": "heatcast/add_room", "entry_id": entry.entry_id, "name": "Kids", "sensor": "sensor.kids"}
+    )
+    response = await client.receive_json()
+    assert response["success"]
+    room_id = response["result"]["room_id"]
+    await hass.async_block_till_done()
+
+    await client.send_json(
+        {
+            "id": 4,
+            "type": "heatcast/update_room",
+            "entry_id": entry.entry_id,
+            "room_id": room_id,
+            "name": "Kids room",
+            "sensor": "sensor.kids",
+            "valve": "climate.kids_valve",
+        }
+    )
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    room = hass.config_entries.async_get_entry(entry.entry_id).subentries[room_id]
+    assert room.title == "Kids room"
+    assert room.data["valve"] == "climate.kids_valve"
+    assert room.data["weight"] == 1.0
+
+    await client.send_json({"id": 5, "type": "heatcast/remove_room", "entry_id": entry.entry_id, "room_id": room_id})
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    assert room_id not in hass.config_entries.async_get_entry(entry.entry_id).subentries
