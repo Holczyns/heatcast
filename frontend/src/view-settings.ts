@@ -41,24 +41,31 @@ export class HeatCastSettings extends LitElement {
       return html`<section class="card muted">${this.localize("settings.admin_only")}</section>`;
     }
     return html`
-      <div class="grid">
-        ${this.renderBoiler()}
-        <heatcast-sources-card .hass=${this.hass} .entry=${this.entry} .localize=${this.localize}></heatcast-sources-card>
-        ${this.renderCurve()}
-        ${GROUPS.map(([title, keys]) =>
-          this.renderGroup(
-            title,
-            keys.map((key) => this.entry.entities[key]),
-            keys.map((key) => this.paramLabel(key)),
-          ),
-        )}
-        <heatcast-rooms-card .hass=${this.hass} .entry=${this.entry} .localize=${this.localize}></heatcast-rooms-card>
-        ${this.renderFeatures()}
+      <div class="layout">
+        <div class="column">
+          ${this.renderBoiler()}
+          <heatcast-sources-card .hass=${this.hass} .entry=${this.entry} .localize=${this.localize}></heatcast-sources-card>
+          <heatcast-rooms-card .hass=${this.hass} .entry=${this.entry} .localize=${this.localize}></heatcast-rooms-card>
+          ${this.renderFeatures()}
+        </div>
+        <div class="rest">
+          <div class="column">${this.renderCurve()} ${this.renderParamGroup(0)}</div>
+          <div class="column">${this.renderParamGroup(1)} ${this.renderParamGroup(2)} ${this.renderParamGroup(3)}</div>
+        </div>
       </div>
       <p class="small">
         <a href="/config/integrations/integration/heatcast">${this.localize("settings.entities")}</a>
       </p>
     `;
+  }
+
+  private renderParamGroup(index: number): TemplateResult {
+    const [title, keys] = GROUPS[index];
+    return this.renderGroup(
+      title,
+      keys.map((key) => this.entry.entities[key]),
+      keys.map((key) => this.paramLabel(key)),
+    );
   }
 
   private renderGroup(title: TranslationKey, entityIds: (string | undefined)[], labels?: string[]): TemplateResult {
@@ -174,14 +181,37 @@ export class HeatCastSettings extends LitElement {
     shared,
     controlStyles,
     css`
-      /* Columns instead of a grid: cards of different height leave no holes. */
-      .grid {
-        columns: 3 340px;
-        column-gap: var(--hc-gap);
+      /* Every card has a fixed column, so a card that grows never moves the others. */
+      .layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+        gap: var(--hc-gap);
+        align-items: start;
       }
-      .grid > section {
-        break-inside: avoid;
-        margin-bottom: var(--hc-gap);
+      .rest {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: var(--hc-gap);
+        align-items: start;
+      }
+      .column {
+        display: flex;
+        flex-direction: column;
+        gap: var(--hc-gap);
+        min-width: 0;
+      }
+      @media (max-width: 1250px) {
+        .layout {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .rest {
+          grid-template-columns: minmax(0, 1fr);
+        }
+      }
+      @media (max-width: 760px) {
+        .layout {
+          grid-template-columns: minmax(0, 1fr);
+        }
       }
       .toggle {
         flex: none;

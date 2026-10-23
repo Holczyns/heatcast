@@ -30,6 +30,8 @@ It writes the result to any number entity your boiler reads, such as `selflowtem
 - **Setup wizard** for the boiler outputs, weather sources, a heating curve with a preview, and rooms.
 - **Sidebar panel** showing the house and the rooms, the boiler and a step-by-step breakdown of where the flow
   temperature comes from. Also history, daily burner hours, all settings and a built-in guide.
+- **Edit everything from the panel**: boiler and weather entities, adding, renaming and removing rooms, radiator
+  valves.
 - **Shadow mode** by default. HeatCast calculates everything but sends nothing until boiler control is switched on,
   so it can be compared with the current control first.
 - **Rooms** with weights, a filter that ignores open windows and crowded rooms, and a hold for sensors that drop out
@@ -42,6 +44,8 @@ It writes the result to any number entity your boiler reads, such as `selflowtem
 - **Built-in guide** covering the switch-over, failure behaviour and curve tuning.
 
 ![Settings tab with the live heating curve](docs/images/panel-settings.png)
+
+![Built-in guide](docs/images/panel-guide.png)
 
 ## Requirements
 
