@@ -18,8 +18,8 @@ class RoomConfig:
 
     key: str
     weight: float = 1.0
-    offset: float = 0.0
-    """Room target relative to the house setpoint (K)."""
+    target: float | None = None
+    """Own comfort target, used while rooms are not synchronised with the house."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -80,7 +80,7 @@ def filter_step(
 def summarize(
     rooms: list[RoomConfig],
     filtered: dict[str, float | None],
-    setpoint: float | None,
+    targets: dict[str, float],
 ) -> RoomSummary:
     """Weighted temperature, weight coverage and weighted error over valid rooms."""
     weight_all = 0.0
@@ -95,8 +95,7 @@ def summarize(
             continue
         weight_valid += room.weight
         weighted_temp += room.weight * value
-        if setpoint is not None:
-            weighted_error += room.weight * (setpoint + room.offset - value)
+        weighted_error += room.weight * (targets[room.key] - value)
 
     coverage = round(weight_valid / weight_all, 2) if weight_all > 0 else 0.0
     covered = (coverage >= ROOM_COVERAGE_MIN) and (weight_valid > 0)
@@ -105,13 +104,23 @@ def summarize(
     error = None
     if covered:
         temperature = round(weighted_temp / weight_valid, 1)
-    if covered and (setpoint is not None):
+    if covered:
         error = round(weighted_error / weight_valid, 2)
     return RoomSummary(temperature=temperature, coverage=coverage, error=error)
 
 
-def room_target(setpoint: float | None, room: RoomConfig) -> float | None:
-    """Target temperature of a single room, used for radiator valves."""
-    if setpoint is None:
-        return None
-    return setpoint + room.offset
+def room_targets(
+    rooms: list[RoomConfig],
+    house_comfort: float,
+    eco_shift: float,
+    synchronised: bool,
+) -> dict[str, float]:
+    """Target of every room: the house comfort value or the room's own, both shifted by eco."""
+    targets = {}
+    for room in rooms:
+        comfort = house_comfort
+        uses_own_target = (not synchronised) and (room.target is not None)
+        if uses_own_target:
+            comfort = room.target
+        targets[room.key] = comfort + eco_shift
+    return targets

@@ -28,7 +28,8 @@ class Params:
     """User-tunable parameters, defaults match an underfloor system."""
 
     comfort_temp: float = 20.0
-    eco_temp: float = 20.0
+    eco_offset: float = 0.0
+    """Setback applied outside the comfort schedule (K, zero or negative)."""
 
     room_rate_max: float = 0.4
     """Fastest change of a room reading passed through the filter (K/h)."""

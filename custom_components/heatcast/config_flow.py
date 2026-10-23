@@ -35,7 +35,6 @@ from .const import (
     CONF_FLOW_SENSOR,
     CONF_HEATING_TYPE,
     CONF_IDLE_FLOW,
-    CONF_OFFSET,
     CONF_OUTDOOR_SENSOR,
     CONF_PARAMS,
     CONF_SCHEDULE,
@@ -141,7 +140,6 @@ def room_schema(defaults: dict[str, Any], with_tuning: bool) -> probatio.Schema:
     }
     if with_tuning:
         fields[probatio.Required(CONF_WEIGHT, default=defaults.get(CONF_WEIGHT, DEFAULT_WEIGHT))] = _number(0, 1, 0.05)
-        fields[probatio.Required(CONF_OFFSET, default=defaults.get(CONF_OFFSET, 0.0))] = _number(-3, 3, 0.5, "K")
     fields[_optional(CONF_VALVE, defaults)] = _entity("climate")
     fields[_optional(CONF_VALVE_TEMPERATURE, defaults)] = _entity(["number", "input_number"])
     return probatio.Schema(fields)
@@ -272,7 +270,7 @@ class HeatCastConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class RoomSubentryFlow(ConfigSubentryFlow):
-    """Add or edit a room; weight and offset are later changed as entities."""
+    """Add or edit a room; weight and target are later changed as entities."""
 
     async def async_step_user(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         if user_input is not None:
@@ -283,7 +281,7 @@ class RoomSubentryFlow(ConfigSubentryFlow):
     async def async_step_reconfigure(self, user_input: dict[str, Any] | None = None) -> SubentryFlowResult:
         subentry = self._get_reconfigure_subentry()
         if user_input is not None:
-            data = {key: value for key, value in subentry.data.items() if key in (CONF_WEIGHT, CONF_OFFSET)}
+            data = {key: value for key, value in subentry.data.items() if key == CONF_WEIGHT}
             data.update({key: value for key, value in user_input.items() if key != CONF_NAME})
             return self.async_update_and_abort(self._get_entry(), subentry, data=data, title=user_input[CONF_NAME])
 

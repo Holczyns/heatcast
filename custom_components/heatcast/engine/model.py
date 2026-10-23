@@ -25,6 +25,8 @@ class Inputs:
     outdoor: float | None
     comfort_active: bool = False
     enabled: bool = True
+    synchronised: bool = True
+    """Every room follows the house setpoint instead of its own target."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,7 +43,7 @@ class Snapshot:
     demand_wanted: bool
     demand: bool
     flow: int | None
-    room_targets: dict[str, float | None]
+    room_targets: dict[str, float]
 
 
 @dataclass(slots=True)
@@ -151,8 +153,10 @@ class Model:
 
     def evaluate(self, inputs: Inputs, now: datetime) -> Snapshot:
         params = self.params
-        setpoint = control.house_setpoint(inputs.comfort_active, params)
-        room = rooms.summarize(self.rooms, self.state.filtered, setpoint)
+        shift = control.eco_shift(inputs.comfort_active, params)
+        setpoint = params.comfort_temp + shift
+        targets = rooms.room_targets(self.rooms, params.comfort_temp, shift, inputs.synchronised)
+        room = rooms.summarize(self.rooms, self.state.filtered, targets)
         outdoor = weather.summarize_outdoor(self.state.damped, inputs.outdoor, self.state.forecast, now, params)
         effective = outdoor.effective if outdoor is not None else None
         switch_temp = outdoor.switch if outdoor is not None else None
@@ -181,5 +185,5 @@ class Model:
             demand_wanted=wanted,
             demand=demand,
             flow=flow,
-            room_targets={config.key: rooms.room_target(setpoint, config) for config in self.rooms},
+            room_targets=targets,
         )

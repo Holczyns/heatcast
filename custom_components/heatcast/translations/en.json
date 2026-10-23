@@ -46,7 +46,7 @@
         "data_description": {
           "outdoor_sensor": "Preferably the boiler's own outdoor sensor.",
           "weather": "Optional. Needs a weather service with an hourly forecast, such as Met.no.",
-          "schedule": "Optional. While the schedule is on, the comfort temperature applies, otherwise eco. Without a schedule the comfort temperature always applies."
+          "schedule": "Optional. Outside the schedule the eco setback applies. Without a schedule it never applies."
         }
       },
       "curve": {
@@ -77,18 +77,16 @@
       },
       "room": {
         "title": "Room",
-        "description": "Each room has a temperature sensor and a weight. The controller keeps the weighted average of all rooms at the target; a room with weight 0 is only shown.",
+        "description": "Each room has a temperature sensor and a weight. The controller keeps the weighted average of all rooms at their targets; a room with weight 0 is only shown. The room temperature is set later on its thermostat.",
         "data": {
           "name": "Name",
           "sensor": "Temperature sensor",
           "weight": "Weight",
-          "offset": "Target offset",
           "valve": "Radiator valve",
           "valve_temperature": "Valve temperature input"
         },
         "data_description": {
           "weight": "How much the room counts, 0 to 1.",
-          "offset": "How much warmer (+) or cooler (−) this room should be than the house setpoint.",
           "valve": "Optional thermostatic radiator valve. HeatCast sets it to the room target every 5 minutes while boiler control is on.",
           "valve_temperature": "Optional number entity of the valve for an external temperature. HeatCast writes the room sensor value to it."
         }
@@ -131,25 +129,23 @@
       "step": {
         "user": {
           "title": "New room",
-          "description": "Each room has a temperature sensor and a weight. The controller keeps the weighted average of all rooms at the target; a room with weight 0 is only shown.",
+          "description": "Each room has a temperature sensor and a weight. The controller keeps the weighted average of all rooms at their targets; a room with weight 0 is only shown. The room temperature is set later on its thermostat.",
           "data": {
             "name": "Name",
             "sensor": "Temperature sensor",
             "weight": "Weight",
-            "offset": "Target offset",
             "valve": "Radiator valve",
             "valve_temperature": "Valve temperature input"
           },
           "data_description": {
             "weight": "How much the room counts, 0 to 1.",
-            "offset": "How much warmer (+) or cooler (−) this room should be than the house setpoint.",
             "valve": "Optional thermostatic radiator valve. HeatCast sets it to the room target every 5 minutes while boiler control is on.",
             "valve_temperature": "Optional number entity of the valve for an external temperature. HeatCast writes the room sensor value to it."
           }
         },
         "reconfigure": {
           "title": "Edit room",
-          "description": "Weight and offset are changed on the room's device page.",
+          "description": "The weight is changed on the room's device page, the temperature on its thermostat.",
           "data": {
             "name": "Name",
             "sensor": "Temperature sensor",
@@ -171,60 +167,156 @@
   },
   "entity": {
     "binary_sensor": {
-      "demand": { "name": "Heating demand" },
-      "forecast_valid": { "name": "Forecast up to date" }
+      "demand": {
+        "name": "Heating demand"
+      },
+      "forecast_valid": {
+        "name": "Forecast up to date"
+      }
     },
     "number": {
-      "comfort_temp": { "name": "Comfort temperature" },
-      "eco_temp": { "name": "Eco temperature" },
-      "room_rate_max": { "name": "Room filter rate" },
-      "sensor_hold_min": { "name": "Sensor dropout hold" },
-      "damping_tau_h": { "name": "Building time constant" },
-      "forecast_horizon_h": { "name": "Forecast horizon" },
-      "forecast_weight": { "name": "Forecast weight" },
-      "k_solar": { "name": "Sun gain" },
-      "k_wind": { "name": "Wind loss" },
-      "wind_ref": { "name": "Wind threshold" },
-      "kp": { "name": "Proportional gain" },
-      "ti_min": { "name": "Integral time" },
-      "design_temp": { "name": "Curve design flow temperature" },
-      "outdoor_min": { "name": "Curve design outdoor temperature" },
-      "curve_exponent": { "name": "Curve curvature" },
-      "curve_offset": { "name": "Curve shift" },
-      "summer_temp": { "name": "Heating off above" },
-      "flow_min": { "name": "Minimum flow temperature" },
-      "flow_max": { "name": "Maximum flow temperature" },
-      "integral": { "name": "Integral" },
-      "outdoor_damped": { "name": "Damped outdoor temperature" },
-      "test_flow": { "name": "Test flow temperature" },
-      "room_weight": { "name": "Weight" },
-      "room_offset": { "name": "Target offset" }
+      "comfort_temp": {
+        "name": "House temperature"
+      },
+      "room_rate_max": {
+        "name": "Room filter rate"
+      },
+      "sensor_hold_min": {
+        "name": "Sensor dropout hold"
+      },
+      "damping_tau_h": {
+        "name": "Building time constant"
+      },
+      "forecast_horizon_h": {
+        "name": "Forecast horizon"
+      },
+      "forecast_weight": {
+        "name": "Forecast weight"
+      },
+      "k_solar": {
+        "name": "Sun gain"
+      },
+      "k_wind": {
+        "name": "Wind loss"
+      },
+      "wind_ref": {
+        "name": "Wind threshold"
+      },
+      "kp": {
+        "name": "Proportional gain"
+      },
+      "ti_min": {
+        "name": "Integral time"
+      },
+      "design_temp": {
+        "name": "Curve design flow temperature"
+      },
+      "outdoor_min": {
+        "name": "Curve design outdoor temperature"
+      },
+      "curve_exponent": {
+        "name": "Curve curvature"
+      },
+      "curve_offset": {
+        "name": "Curve shift"
+      },
+      "summer_temp": {
+        "name": "Heating off above"
+      },
+      "flow_min": {
+        "name": "Minimum flow temperature"
+      },
+      "flow_max": {
+        "name": "Maximum flow temperature"
+      },
+      "integral": {
+        "name": "Integral"
+      },
+      "outdoor_damped": {
+        "name": "Damped outdoor temperature"
+      },
+      "test_flow": {
+        "name": "Test flow temperature"
+      },
+      "room_weight": {
+        "name": "Weight"
+      },
+      "eco_offset": {
+        "name": "Eco setback"
+      }
     },
     "sensor": {
-      "flow_setpoint": { "name": "Flow temperature setpoint" },
-      "curve_flow": { "name": "Curve flow temperature" },
-      "room_temperature": { "name": "House temperature" },
-      "setpoint": { "name": "House setpoint" },
-      "outdoor_effective": { "name": "Effective outdoor temperature" },
-      "outdoor_switch": { "name": "Outdoor temperature for summer cut-off" },
-      "room_error": { "name": "Room deviation" },
-      "room_correction": { "name": "Room correction" },
-      "proportional": { "name": "Proportional term" },
-      "forecast_effect": { "name": "Forecast effect" },
-      "solar_correction": { "name": "Sun correction" },
-      "wind_correction": { "name": "Wind correction" },
-      "forecast_delta": { "name": "Forecast temperature change" },
-      "room_coverage": { "name": "Room sensor coverage" },
-      "forecast_cloud": { "name": "Forecast cloud cover" },
-      "forecast_wind": { "name": "Forecast wind" },
-      "forecast_daylight": { "name": "Forecast daylight" },
-      "forecast_updated": { "name": "Forecast updated" },
-      "room_filtered": { "name": "Filtered temperature" },
-      "room_target": { "name": "Target temperature" }
+      "flow_setpoint": {
+        "name": "Flow temperature setpoint"
+      },
+      "curve_flow": {
+        "name": "Curve flow temperature"
+      },
+      "room_temperature": {
+        "name": "House temperature"
+      },
+      "setpoint": {
+        "name": "House setpoint"
+      },
+      "outdoor_effective": {
+        "name": "Effective outdoor temperature"
+      },
+      "outdoor_switch": {
+        "name": "Outdoor temperature for summer cut-off"
+      },
+      "room_error": {
+        "name": "Room deviation"
+      },
+      "room_correction": {
+        "name": "Room correction"
+      },
+      "proportional": {
+        "name": "Proportional term"
+      },
+      "forecast_effect": {
+        "name": "Forecast effect"
+      },
+      "solar_correction": {
+        "name": "Sun correction"
+      },
+      "wind_correction": {
+        "name": "Wind correction"
+      },
+      "forecast_delta": {
+        "name": "Forecast temperature change"
+      },
+      "room_coverage": {
+        "name": "Room sensor coverage"
+      },
+      "forecast_cloud": {
+        "name": "Forecast cloud cover"
+      },
+      "forecast_wind": {
+        "name": "Forecast wind"
+      },
+      "forecast_daylight": {
+        "name": "Forecast daylight"
+      },
+      "forecast_updated": {
+        "name": "Forecast updated"
+      },
+      "room_filtered": {
+        "name": "Filtered temperature"
+      },
+      "room_target": {
+        "name": "Room target"
+      }
     },
     "switch": {
-      "control": { "name": "Boiler control" },
-      "test_mode": { "name": "Boiler test mode" }
+      "control": {
+        "name": "Boiler control"
+      },
+      "test_mode": {
+        "name": "Boiler test mode"
+      },
+      "room_sync": {
+        "name": "Room sync"
+      }
     }
   }
 }

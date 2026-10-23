@@ -6,8 +6,8 @@ from engine.control import (
     correction,
     curve_flow,
     demand_wanted,
+    eco_shift,
     flow_setpoint,
-    house_setpoint,
     integrate,
     proportional,
 )
@@ -17,10 +17,10 @@ PARAMS = Params()
 NOW = datetime(2026, 10, 23, 12, 0, tzinfo=UTC)
 
 
-def test_setpoint_follows_schedule():
-    params = Params(comfort_temp=21, eco_temp=19)
-    assert house_setpoint(True, params) == 21
-    assert house_setpoint(False, params) == 19
+def test_eco_setback_applies_outside_schedule():
+    params = Params(eco_offset=-1.5)
+    assert eco_shift(True, params) == 0
+    assert eco_shift(False, params) == -1.5
 
 
 @pytest.mark.parametrize(

@@ -32,7 +32,6 @@ MISSED_TICKS = {"2026-10-23T17:55:00+02:00"}
 
 PARAM_FIELDS = {
     "comfort_temp": "comfort_temp",
-    "eco_temp": "eco_temp",
     "room_rate_max": "room_rate_max",
     "sensor_hold_min": "sensor_hold_min",
     "damping_tau_h": "damping_tau_h",
@@ -104,15 +103,20 @@ def forecast_at(history: dict[str, Series], moment: datetime) -> ForecastSummary
 
 
 def params_at(history: dict[str, Series], moment: datetime) -> Params:
-    return Params(**{field: history["input_number." + name].number(moment) for field, name in PARAM_FIELDS.items()})
+    values = {field: history["input_number." + name].number(moment) for field, name in PARAM_FIELDS.items()}
+    # The recorded implementation stored eco as an absolute temperature.
+    values["eco_offset"] = history["input_number.eco_temp"].number(moment) - values["comfort_temp"]
+    return Params(**values)
 
 
 def rooms_at(history: dict[str, Series], moment: datetime) -> list[RoomConfig]:
+    """The recorded room offsets become individual room targets."""
+    comfort = history["input_number.comfort_temp"].number(moment)
     return [
         RoomConfig(
             key,
             weight=history["input_number.weight_" + key].number(moment),
-            offset=history["input_number.offset_" + key].number(moment) or 0.0,
+            target=comfort + (history["input_number.offset_" + key].number(moment) or 0.0),
         )
         for key in ROOMS
     ]
@@ -153,6 +157,7 @@ def replay():
             outdoor=history["sensor.outdoor"].number(tick),
             comfort_active=history["schedule.comfort"].at(tick)[0] == "on",
             enabled=history["input_boolean.enabled"].at(tick)[0] == "on",
+            synchronised=False,
         )
         snapshot = model.step(inputs, tick)
         settled = tick + SETTLE

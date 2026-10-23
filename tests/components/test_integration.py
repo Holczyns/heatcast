@@ -62,12 +62,12 @@ async def run_wizard(hass: HomeAssistant) -> config_entries.ConfigEntry:
     assert "| 0 |" in result["description_placeholders"]["preview"]
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {"next_step_id": "room"})
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"name": "Living room", "sensor": "sensor.living", "weight": 0.5, "offset": 1.0}
+        result["flow_id"], {"name": "Living room", "sensor": "sensor.living", "weight": 0.5}
     )
     assert result["type"] is FlowResultType.MENU
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {"next_step_id": "room"})
     result = await hass.config_entries.flow.async_configure(
-        result["flow_id"], {"name": "Bedroom", "sensor": "sensor.bedroom", "weight": 0.5, "offset": 0.0}
+        result["flow_id"], {"name": "Bedroom", "sensor": "sensor.bedroom", "weight": 0.5}
     )
     result = await hass.config_entries.flow.async_configure(result["flow_id"], {"next_step_id": "finish"})
     assert result["type"] is FlowResultType.CREATE_ENTRY
@@ -150,7 +150,7 @@ async def test_add_room_later(hass: HomeAssistant, boiler) -> None:
         (entry.entry_id, "room"), context={"source": config_entries.SOURCE_USER}
     )
     result = await hass.config_entries.subentries.async_configure(
-        result["flow_id"], {"name": "Kids room", "sensor": "sensor.kids", "weight": 1.0, "offset": 0.0}
+        result["flow_id"], {"name": "Kids room", "sensor": "sensor.kids", "weight": 1.0}
     )
     assert result["type"] is FlowResultType.CREATE_ENTRY
     await hass.async_block_till_done()
@@ -168,7 +168,7 @@ async def test_valve_follows_room_target_on_step(hass: HomeAssistant, boiler) ->
     )
     await hass.config_entries.subentries.async_configure(
         result["flow_id"],
-        {"name": "Kids room", "sensor": "sensor.kids", "weight": 0.0, "offset": -1.0, "valve": "climate.kids_valve"},
+        {"name": "Kids room", "sensor": "sensor.kids", "weight": 0.0, "valve": "climate.kids_valve"},
     )
     await hass.async_block_till_done()
     control = entity_id(hass, "switch", "_control")
@@ -183,4 +183,29 @@ async def test_valve_follows_room_target_on_step(hass: HomeAssistant, boiler) ->
 
     async_fire_time_changed(hass, base + timedelta(minutes=5))
     await hass.async_block_till_done()
-    assert calls[-1].data == {"entity_id": "climate.kids_valve", "temperature": 19.0}
+    assert calls[-1].data == {"entity_id": "climate.kids_valve", "temperature": 20.0}
+
+
+async def test_room_target_leaves_sync(hass: HomeAssistant, boiler) -> None:
+    entry = await run_wizard(hass)
+    rooms = {subentry.title: subentry.subentry_id for subentry in entry.subentries.values()}
+    living = entity_id(hass, "climate", f"{rooms['Living room']}_thermostat")
+    bedroom = entity_id(hass, "climate", f"{rooms['Bedroom']}_thermostat")
+    sync = entity_id(hass, "switch", "_room_sync")
+    assert hass.states.get(sync).state == "on"
+
+    await hass.services.async_call(
+        "climate", "set_temperature", {"entity_id": living, "temperature": 21.5}, blocking=True
+    )
+    await hass.async_block_till_done()
+    assert hass.states.get(sync).state == "off"
+    assert hass.states.get(living).attributes["temperature"] == 21.5
+    assert hass.states.get(bedroom).attributes["temperature"] == 20.0
+
+    house = entity_id(hass, "climate", "_thermostat")
+    await hass.services.async_call(
+        "climate", "set_temperature", {"entity_id": house, "temperature": 19.0}, blocking=True
+    )
+    await hass.services.async_call("switch", "turn_on", {"entity_id": sync}, blocking=True)
+    await hass.async_block_till_done()
+    assert hass.states.get(living).attributes["temperature"] == 19.0

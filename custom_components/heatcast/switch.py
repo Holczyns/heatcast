@@ -18,7 +18,13 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
-    async_add_entities([ControlSwitch(coordinator, "control"), TestModeSwitch(coordinator, "test_mode")])
+    async_add_entities(
+        [
+            ControlSwitch(coordinator, "control"),
+            RoomSyncSwitch(coordinator, "room_sync"),
+            TestModeSwitch(coordinator, "test_mode"),
+        ]
+    )
 
 
 class ControlSwitch(HeatCastEntity, SwitchEntity):
@@ -33,6 +39,20 @@ class ControlSwitch(HeatCastEntity, SwitchEntity):
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         await self.coordinator.async_set_control(False)
+
+
+class RoomSyncSwitch(HeatCastEntity, SwitchEntity):
+    """On: every room follows the main thermostat. Off: each room keeps its own target."""
+
+    @property
+    def is_on(self) -> bool:
+        return self.coordinator.rooms_synchronised
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        self.coordinator.async_set_rooms_synchronised(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        self.coordinator.async_set_rooms_synchronised(False)
 
 
 class TestModeSwitch(HeatCastEntity, SwitchEntity):

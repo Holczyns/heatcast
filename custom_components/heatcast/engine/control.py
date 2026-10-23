@@ -8,11 +8,12 @@ from datetime import datetime
 from .params import DEMAND_DELAY_S, INTEGRAL_LIMIT, PROPORTIONAL_LIMIT, Params
 
 
-def house_setpoint(comfort_active: bool, params: Params) -> float:
-    setpoint = params.eco_temp
+def eco_shift(comfort_active: bool, params: Params) -> float:
+    """Setback applied to every target outside the comfort schedule."""
+    shift = params.eco_offset
     if comfort_active:
-        setpoint = params.comfort_temp
-    return setpoint
+        shift = 0.0
+    return shift
 
 
 def curve_flow(setpoint: float | None, effective: float | None, params: Params) -> float | None:

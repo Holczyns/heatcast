@@ -1,4 +1,4 @@
-"""Tuning parameters, room weights and offsets, and editable model state."""
+"""Tuning parameters, room weights and editable model state."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from . import HeatCastConfigEntry
-from .const import CONF_OFFSET, CONF_WEIGHT
+from .const import CONF_WEIGHT
 from .coordinator import HeatCastCoordinator
 from .entity import HeatCastEntity, HeatCastRoomEntity
 
@@ -42,7 +42,7 @@ def _number(
 
 PARAMETERS: tuple[NumberEntityDescription, ...] = (
     _number("comfort_temp", 5, 30, 0.5, CELSIUS, category=None, temperature=True),
-    _number("eco_temp", 5, 30, 0.5, CELSIUS, category=None, temperature=True),
+    _number("eco_offset", -5, 0, 0.5, KELVIN, category=None),
     _number("room_rate_max", 0.05, 2, 0.05, "K/h"),
     _number("sensor_hold_min", 0, 120, 5, UnitOfTime.MINUTES),
     _number("damping_tau_h", 0.5, 24, 0.5, UnitOfTime.HOURS),
@@ -70,10 +70,7 @@ STATE_VALUES: tuple[NumberEntityDescription, ...] = (
 
 TEST_FLOW = _number("test_flow", 20, 60, 1, CELSIUS, temperature=True)
 
-ROOM_TUNING: tuple[NumberEntityDescription, ...] = (
-    _number(CONF_WEIGHT, 0, 1, 0.05),
-    _number(CONF_OFFSET, -3, 3, 0.5, KELVIN),
-)
+ROOM_TUNING: tuple[NumberEntityDescription, ...] = (_number(CONF_WEIGHT, 0, 1, 0.05),)
 
 
 async def async_setup_entry(

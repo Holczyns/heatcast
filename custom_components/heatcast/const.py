@@ -26,7 +26,7 @@ CONF_PARAMS: Final = "params"
 SUBENTRY_ROOM: Final = "room"
 CONF_SENSOR: Final = "sensor"
 CONF_WEIGHT: Final = "weight"
-CONF_OFFSET: Final = "offset"
+CONF_TARGET: Final = "target"
 CONF_VALVE: Final = "valve"
 CONF_VALVE_TEMPERATURE: Final = "valve_temperature"
 

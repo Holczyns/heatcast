@@ -6,7 +6,8 @@ first. The coordinator is the only writer of the boiler entities and
 of the radiator valves configured in rooms.
 
 State kept across restarts (Store): tuning parameters, room weights and
-offsets, model state, control switch and heating on/off.
+targets, room synchronisation, model state, control switch and heating
+on/off.
 """
 
 from __future__ import annotations
@@ -30,11 +31,11 @@ from .const import (
     CONF_BLOCK_ENTITY,
     CONF_FLOW_ENTITY,
     CONF_IDLE_FLOW,
-    CONF_OFFSET,
     CONF_OUTDOOR_SENSOR,
     CONF_PARAMS,
     CONF_SCHEDULE,
     CONF_SENSOR,
+    CONF_TARGET,
     CONF_VALVE,
     CONF_VALVE_TEMPERATURE,
     CONF_WEATHER,
@@ -90,6 +91,7 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
         self.room_tuning: dict[str, dict[str, float]] = {}
         self.control_active = False
         self.heating_enabled = True
+        self.rooms_synchronised = True
         self.test_mode = False
         self.test_flow = DEFAULT_TEST_FLOW
         self.model = Model(Params(), [])
@@ -97,6 +99,11 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
         self._test_timer: CALLBACK_TYPE | None = None
 
     # Configuration views
+
+    @property
+    def eco_shift(self) -> float:
+        """Setback in force right now, read back from the last evaluation."""
+        return self.data.setpoint - self.params["comfort_temp"]
 
     @property
     def options(self) -> dict[str, Any]:
@@ -120,6 +127,7 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
         self.params.update({key: value for key, value in stored.get("params", {}).items() if key in PARAM_KEYS})
         self.control_active = stored.get("control_active", False)
         self.heating_enabled = stored.get("heating_enabled", True)
+        self.rooms_synchronised = stored.get("rooms_synchronised", True)
         self.test_flow = stored.get("test_flow", DEFAULT_TEST_FLOW)
 
         stored_tuning = stored.get("rooms", {})
@@ -127,7 +135,7 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
             tuning = stored_tuning.get(room_key, {})
             self.room_tuning[room_key] = {
                 CONF_WEIGHT: tuning.get(CONF_WEIGHT, subentry.data.get(CONF_WEIGHT, DEFAULT_WEIGHT)),
-                CONF_OFFSET: tuning.get(CONF_OFFSET, subentry.data.get(CONF_OFFSET, 0.0)),
+                CONF_TARGET: tuning.get(CONF_TARGET, self.params["comfort_temp"]),
             }
 
         state = ModelState.from_dict(stored["model"]) if "model" in stored else ModelState()
@@ -165,6 +173,7 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
             "model": self.model.state.as_dict(),
             "control_active": self.control_active,
             "heating_enabled": self.heating_enabled,
+            "rooms_synchronised": self.rooms_synchronised,
             "test_flow": self.test_flow,
         }
 
@@ -175,7 +184,7 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
 
     def _room_configs(self) -> list[RoomConfig]:
         return [
-            RoomConfig(key, weight=self.room_tuning[key][CONF_WEIGHT], offset=self.room_tuning[key][CONF_OFFSET])
+            RoomConfig(key, weight=self.room_tuning[key][CONF_WEIGHT], target=self.room_tuning[key][CONF_TARGET])
             for key in self.rooms
         ]
 
@@ -202,6 +211,7 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
             outdoor=_number(outdoor_state.state) if outdoor_state else None,
             comfort_active=comfort_active,
             enabled=self.heating_enabled,
+            synchronised=self.rooms_synchronised,
         )
 
     async def _async_refresh_forecast(self, now: datetime) -> None:
@@ -385,6 +395,22 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
     @callback
     def async_set_heating_enabled(self, enabled: bool) -> None:
         self.heating_enabled = enabled
+        self.async_refresh_snapshot()
+
+    @callback
+    def async_set_rooms_synchronised(self, synchronised: bool) -> None:
+        # Leaving sync starts every room from the house value, as in a car climate unit.
+        if self.rooms_synchronised and not synchronised:
+            for tuning in self.room_tuning.values():
+                tuning[CONF_TARGET] = self.params["comfort_temp"]
+        self.rooms_synchronised = synchronised
+        self.async_refresh_snapshot()
+
+    @callback
+    def async_set_room_target(self, room_key: str, comfort_target: float) -> None:
+        """Setting one room while synchronised switches all rooms to individual targets."""
+        self.async_set_rooms_synchronised(False)
+        self.room_tuning[room_key][CONF_TARGET] = comfort_target
         self.async_refresh_snapshot()
 
     @callback

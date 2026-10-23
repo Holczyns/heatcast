@@ -1,5 +1,5 @@
 import pytest
-from engine.rooms import RoomConfig, RoomReading, filter_step, room_target, summarize
+from engine.rooms import RoomConfig, RoomReading, filter_step, room_targets, summarize
 
 STEP = 0.4 * 5 / 60
 HOLD_S = 30 * 60
@@ -45,14 +45,15 @@ def test_filter_does_not_hold_without_previous_value():
 
 
 ROOMS = [
-    RoomConfig("living", weight=0.25, offset=1.0),
+    RoomConfig("living", weight=0.25, target=21.0),
     RoomConfig("kids", weight=0.5),
     RoomConfig("bedroom", weight=0.25),
 ]
+TARGETS = {"living": 21.0, "kids": 20.0, "bedroom": 20.0}
 
 
 def test_summary_weights_rooms_and_offsets():
-    summary = summarize(ROOMS, {"living": 21.0, "kids": 20.0, "bedroom": 19.0}, setpoint=20.0)
+    summary = summarize(ROOMS, {"living": 21.0, "kids": 20.0, "bedroom": 19.0}, TARGETS)
     assert summary.temperature == 20.0
     assert summary.coverage == 1.0
     # living: 21 - 21 = 0, kids: 0, bedroom: +1
@@ -60,17 +61,17 @@ def test_summary_weights_rooms_and_offsets():
 
 
 def test_summary_skips_invalid_room_and_rescales():
-    summary = summarize(ROOMS, {"living": 21.0, "kids": 20.0, "bedroom": None}, setpoint=20.0)
+    summary = summarize(ROOMS, {"living": 21.0, "kids": 20.0, "bedroom": None}, TARGETS)
     assert summary.coverage == 0.75
     assert summary.temperature == pytest.approx(20.3)
 
 
 def test_summary_unavailable_below_half_coverage():
-    summary = summarize(ROOMS, {"living": 21.0, "kids": None, "bedroom": 19.0}, setpoint=20.0)
+    summary = summarize(ROOMS, {"living": 21.0, "kids": None, "bedroom": 19.0}, TARGETS)
     assert summary.coverage == 0.5
     assert summary.temperature == 20.0
 
-    summary = summarize(ROOMS, {"living": 21.0, "kids": None, "bedroom": None}, setpoint=20.0)
+    summary = summarize(ROOMS, {"living": 21.0, "kids": None, "bedroom": None}, TARGETS)
     assert summary.coverage == 0.25
     assert summary.temperature is None
     assert summary.error is None
@@ -78,11 +79,21 @@ def test_summary_unavailable_below_half_coverage():
 
 def test_room_with_zero_weight_is_ignored():
     rooms = [RoomConfig("a", weight=1.0), RoomConfig("b", weight=0.0)]
-    summary = summarize(rooms, {"a": 20.0, "b": 30.0}, setpoint=20.0)
+    summary = summarize(rooms, {"a": 20.0, "b": 30.0}, {"a": 20.0, "b": 20.0})
     assert summary.temperature == 20.0
     assert summary.coverage == 1.0
 
 
-def test_room_target_adds_offset():
-    assert room_target(20.0, RoomConfig("living", offset=1.0)) == 21.0
-    assert room_target(None, RoomConfig("living")) is None
+def test_synchronised_rooms_follow_house():
+    assert room_targets(ROOMS, 20.5, 0.0, synchronised=True) == {"living": 20.5, "kids": 20.5, "bedroom": 20.5}
+
+
+def test_individual_rooms_keep_own_target():
+    targets = room_targets(ROOMS, 20.5, 0.0, synchronised=False)
+    # rooms without an own target fall back to the house value
+    assert targets == {"living": 21.0, "kids": 20.5, "bedroom": 20.5}
+
+
+def test_eco_shifts_every_target():
+    assert room_targets(ROOMS, 20.0, -1.0, synchronised=False)["living"] == 20.0
+    assert room_targets(ROOMS, 20.0, -1.0, synchronised=True)["kids"] == 19.0

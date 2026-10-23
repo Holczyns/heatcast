@@ -46,7 +46,7 @@
         "data_description": {
           "outdoor_sensor": "Najlepiej czujnik zewnętrzny podłączony do kotła.",
           "weather": "Opcjonalnie. Potrzebna usługa pogodowa z prognozą godzinową, np. Met.no.",
-          "schedule": "Opcjonalnie. Gdy harmonogram jest włączony, obowiązuje temperatura komfortowa, poza nim ekonomiczna. Bez harmonogramu zawsze komfortowa."
+          "schedule": "Opcjonalnie. Poza godzinami harmonogramu działa obniżenie eko. Bez harmonogramu obniżenie nie działa nigdy."
         }
       },
       "curve": {
@@ -77,18 +77,16 @@
       },
       "room": {
         "title": "Pokój",
-        "description": "Każdy pokój ma czujnik temperatury i wagę. Regulator utrzymuje na nastawie średnią ważoną pokoi; pokój z wagą 0 jest tylko wyświetlany.",
+        "description": "Każdy pokój ma czujnik temperatury i wagę. Regulator utrzymuje na nastawie średnią ważoną pokoi; pokój z wagą 0 jest tylko wyświetlany. Temperaturę pokoju ustawiasz później na jego termostacie.",
         "data": {
           "name": "Nazwa",
           "sensor": "Czujnik temperatury",
           "weight": "Waga",
-          "offset": "Przesunięcie nastawy",
           "valve": "Głowica grzejnikowa",
           "valve_temperature": "Wejście temperatury głowicy"
         },
         "data_description": {
           "weight": "Jak mocno pokój liczy się w regulacji, od 0 do 1.",
-          "offset": "O ile ten pokój ma być cieplejszy (+) lub chłodniejszy (−) od nastawy domu.",
           "valve": "Opcjonalna głowica termostatyczna. Przy włączonym sterowaniu HeatCast co 5 minut ustawia na niej nastawę pokoju.",
           "valve_temperature": "Opcjonalna encja liczbowa głowicy na temperaturę zewnętrzną. HeatCast wpisuje do niej odczyt czujnika pokoju."
         }
@@ -131,25 +129,23 @@
       "step": {
         "user": {
           "title": "Nowy pokój",
-          "description": "Każdy pokój ma czujnik temperatury i wagę. Regulator utrzymuje na nastawie średnią ważoną pokoi; pokój z wagą 0 jest tylko wyświetlany.",
+          "description": "Każdy pokój ma czujnik temperatury i wagę. Regulator utrzymuje na nastawie średnią ważoną pokoi; pokój z wagą 0 jest tylko wyświetlany. Temperaturę pokoju ustawiasz później na jego termostacie.",
           "data": {
             "name": "Nazwa",
             "sensor": "Czujnik temperatury",
             "weight": "Waga",
-            "offset": "Przesunięcie nastawy",
             "valve": "Głowica grzejnikowa",
             "valve_temperature": "Wejście temperatury głowicy"
           },
           "data_description": {
             "weight": "Jak mocno pokój liczy się w regulacji, od 0 do 1.",
-            "offset": "O ile ten pokój ma być cieplejszy (+) lub chłodniejszy (−) od nastawy domu.",
             "valve": "Opcjonalna głowica termostatyczna. Przy włączonym sterowaniu HeatCast co 5 minut ustawia na niej nastawę pokoju.",
             "valve_temperature": "Opcjonalna encja liczbowa głowicy na temperaturę zewnętrzną. HeatCast wpisuje do niej odczyt czujnika pokoju."
           }
         },
         "reconfigure": {
           "title": "Edycja pokoju",
-          "description": "Wagę i przesunięcie zmieniasz na stronie urządzenia pokoju.",
+          "description": "Wagę zmieniasz na stronie urządzenia pokoju, temperaturę na jego termostacie.",
           "data": {
             "name": "Nazwa",
             "sensor": "Czujnik temperatury",
@@ -171,60 +167,156 @@
   },
   "entity": {
     "binary_sensor": {
-      "demand": { "name": "Zapotrzebowanie na grzanie" },
-      "forecast_valid": { "name": "Prognoza aktualna" }
+      "demand": {
+        "name": "Zapotrzebowanie na grzanie"
+      },
+      "forecast_valid": {
+        "name": "Prognoza aktualna"
+      }
     },
     "number": {
-      "comfort_temp": { "name": "Temperatura komfortowa" },
-      "eco_temp": { "name": "Temperatura ekonomiczna" },
-      "room_rate_max": { "name": "Filtr pokoi: maks. prędkość zmian" },
-      "sensor_hold_min": { "name": "Zanik czujnika: podtrzymanie" },
-      "damping_tau_h": { "name": "Bezwładność budynku" },
-      "forecast_horizon_h": { "name": "Horyzont prognozy" },
-      "forecast_weight": { "name": "Waga prognozy" },
-      "k_solar": { "name": "Zysk od słońca" },
-      "k_wind": { "name": "Strata od wiatru" },
-      "wind_ref": { "name": "Próg wiatru" },
-      "kp": { "name": "Wzmocnienie P" },
-      "ti_min": { "name": "Czas całkowania" },
-      "design_temp": { "name": "Krzywa: zasilanie projektowe" },
-      "outdoor_min": { "name": "Krzywa: temperatura projektowa" },
-      "curve_exponent": { "name": "Krzywa: wygięcie" },
-      "curve_offset": { "name": "Krzywa: przesunięcie" },
-      "summer_temp": { "name": "Grzanie wyłączone powyżej" },
-      "flow_min": { "name": "Minimalna temperatura zasilania" },
-      "flow_max": { "name": "Maksymalna temperatura zasilania" },
-      "integral": { "name": "Całka" },
-      "outdoor_damped": { "name": "Tłumiona temperatura zewnętrzna" },
-      "test_flow": { "name": "Testowa temperatura zasilania" },
-      "room_weight": { "name": "Waga" },
-      "room_offset": { "name": "Przesunięcie nastawy" }
+      "comfort_temp": {
+        "name": "Temperatura domu"
+      },
+      "room_rate_max": {
+        "name": "Filtr pokoi: maks. prędkość zmian"
+      },
+      "sensor_hold_min": {
+        "name": "Zanik czujnika: podtrzymanie"
+      },
+      "damping_tau_h": {
+        "name": "Bezwładność budynku"
+      },
+      "forecast_horizon_h": {
+        "name": "Horyzont prognozy"
+      },
+      "forecast_weight": {
+        "name": "Waga prognozy"
+      },
+      "k_solar": {
+        "name": "Zysk od słońca"
+      },
+      "k_wind": {
+        "name": "Strata od wiatru"
+      },
+      "wind_ref": {
+        "name": "Próg wiatru"
+      },
+      "kp": {
+        "name": "Wzmocnienie P"
+      },
+      "ti_min": {
+        "name": "Czas całkowania"
+      },
+      "design_temp": {
+        "name": "Krzywa: zasilanie projektowe"
+      },
+      "outdoor_min": {
+        "name": "Krzywa: temperatura projektowa"
+      },
+      "curve_exponent": {
+        "name": "Krzywa: wygięcie"
+      },
+      "curve_offset": {
+        "name": "Krzywa: przesunięcie"
+      },
+      "summer_temp": {
+        "name": "Grzanie wyłączone powyżej"
+      },
+      "flow_min": {
+        "name": "Minimalna temperatura zasilania"
+      },
+      "flow_max": {
+        "name": "Maksymalna temperatura zasilania"
+      },
+      "integral": {
+        "name": "Całka"
+      },
+      "outdoor_damped": {
+        "name": "Tłumiona temperatura zewnętrzna"
+      },
+      "test_flow": {
+        "name": "Testowa temperatura zasilania"
+      },
+      "room_weight": {
+        "name": "Waga"
+      },
+      "eco_offset": {
+        "name": "Obniżenie eko"
+      }
     },
     "sensor": {
-      "flow_setpoint": { "name": "Zadana temperatura zasilania" },
-      "curve_flow": { "name": "Zasilanie z krzywej" },
-      "room_temperature": { "name": "Temperatura domu" },
-      "setpoint": { "name": "Nastawa domu" },
-      "outdoor_effective": { "name": "Efektywna temperatura zewnętrzna" },
-      "outdoor_switch": { "name": "Temperatura zewnętrzna dla progu lato/zima" },
-      "room_error": { "name": "Odchyłka pokoi" },
-      "room_correction": { "name": "Korekta pokojowa" },
-      "proportional": { "name": "Człon P" },
-      "forecast_effect": { "name": "Wpływ prognozy" },
-      "solar_correction": { "name": "Korekta słoneczna" },
-      "wind_correction": { "name": "Korekta wiatrowa" },
-      "forecast_delta": { "name": "Prognozowana zmiana temperatury" },
-      "room_coverage": { "name": "Pokrycie czujników pokojowych" },
-      "forecast_cloud": { "name": "Prognozowane zachmurzenie" },
-      "forecast_wind": { "name": "Prognozowany wiatr" },
-      "forecast_daylight": { "name": "Prognozowany udział dnia" },
-      "forecast_updated": { "name": "Prognoza pobrana" },
-      "room_filtered": { "name": "Temperatura po filtrze" },
-      "room_target": { "name": "Nastawa pokoju" }
+      "flow_setpoint": {
+        "name": "Zadana temperatura zasilania"
+      },
+      "curve_flow": {
+        "name": "Zasilanie z krzywej"
+      },
+      "room_temperature": {
+        "name": "Temperatura domu"
+      },
+      "setpoint": {
+        "name": "Nastawa domu"
+      },
+      "outdoor_effective": {
+        "name": "Efektywna temperatura zewnętrzna"
+      },
+      "outdoor_switch": {
+        "name": "Temperatura zewnętrzna dla progu lato/zima"
+      },
+      "room_error": {
+        "name": "Odchyłka pokoi"
+      },
+      "room_correction": {
+        "name": "Korekta pokojowa"
+      },
+      "proportional": {
+        "name": "Człon P"
+      },
+      "forecast_effect": {
+        "name": "Wpływ prognozy"
+      },
+      "solar_correction": {
+        "name": "Korekta słoneczna"
+      },
+      "wind_correction": {
+        "name": "Korekta wiatrowa"
+      },
+      "forecast_delta": {
+        "name": "Prognozowana zmiana temperatury"
+      },
+      "room_coverage": {
+        "name": "Pokrycie czujników pokojowych"
+      },
+      "forecast_cloud": {
+        "name": "Prognozowane zachmurzenie"
+      },
+      "forecast_wind": {
+        "name": "Prognozowany wiatr"
+      },
+      "forecast_daylight": {
+        "name": "Prognozowany udział dnia"
+      },
+      "forecast_updated": {
+        "name": "Prognoza pobrana"
+      },
+      "room_filtered": {
+        "name": "Temperatura po filtrze"
+      },
+      "room_target": {
+        "name": "Nastawa pokoju"
+      }
     },
     "switch": {
-      "control": { "name": "Sterowanie kotłem" },
-      "test_mode": { "name": "Tryb testowy kotła" }
+      "control": {
+        "name": "Sterowanie kotłem"
+      },
+      "test_mode": {
+        "name": "Tryb testowy kotła"
+      },
+      "room_sync": {
+        "name": "Synchronizacja pokoi"
+      }
     }
   }
 }
