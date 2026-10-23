@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 
 from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import StaticPathConfig
 from homeassistant.components.panel_custom import async_register_panel
 from homeassistant.core import HomeAssistant
-from homeassistant.loader import async_get_integration
 
 from .const import DOMAIN
 
@@ -27,13 +27,11 @@ async def async_register_frontend(hass: HomeAssistant) -> None:
     www_exists = await hass.async_add_executor_job(WWW.is_dir)
     if not www_exists:
         return
-    integration = await async_get_integration(hass, DOMAIN)
-    # The version in the query string makes browsers fetch the files again after an update.
-    version = f"?v={integration.version}"
     await hass.http.async_register_static_paths([StaticPathConfig(URL_BASE, str(WWW), cache_headers=True)])
 
     panel_exists = await hass.async_add_executor_job(PANEL_FILE.is_file)
     if panel_exists:
+        version = await hass.async_add_executor_job(_content_tag, PANEL_FILE)
         await async_register_panel(
             hass,
             frontend_url_path=DOMAIN,
@@ -45,4 +43,11 @@ async def async_register_frontend(hass: HomeAssistant) -> None:
 
     card_exists = await hass.async_add_executor_job(CARD_FILE.is_file)
     if card_exists:
+        version = await hass.async_add_executor_job(_content_tag, CARD_FILE)
         add_extra_js_url(hass, f"{URL_BASE}/{CARD_FILE.name}{version}")
+
+
+def _content_tag(path: Path) -> str:
+    """Query string that changes with the file, so browsers never keep an outdated copy."""
+    digest = hashlib.sha256(path.read_bytes()).hexdigest()[:12]
+    return f"?v={digest}"
