@@ -4,6 +4,7 @@
   "after_dependencies": [
     "frontend",
     "http",
+    "panel_custom",
     "schedule",
     "weather"
   ],
@@ -11,6 +12,9 @@
     "@Holczyns"
   ],
   "config_flow": true,
+  "dependencies": [
+    "websocket_api"
+  ],
   "documentation": "https://github.com/Holczyns/heatcast",
   "integration_type": "hub",
   "iot_class": "calculated",

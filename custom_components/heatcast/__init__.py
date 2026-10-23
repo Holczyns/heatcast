@@ -13,7 +13,8 @@ from homeassistant.helpers.typing import ConfigType
 from .const import DOMAIN
 from .coordinator import HeatCastCoordinator
 from .entity import controller_device_info
-from .frontend import async_register_card
+from .frontend import async_register_frontend
+from .websocket import async_register_commands
 
 PLATFORMS = (
     Platform.BINARY_SENSOR,
@@ -29,7 +30,8 @@ type HeatCastConfigEntry = ConfigEntry[HeatCastCoordinator]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    await async_register_card(hass)
+    async_register_commands(hass)
+    await async_register_frontend(hass)
     return True
 
 

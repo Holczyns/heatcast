@@ -233,3 +233,24 @@ async def test_room_target_leaves_sync(hass: HomeAssistant, boiler) -> None:
     await hass.services.async_call("switch", "turn_on", {"entity_id": sync}, blocking=True)
     await hass.async_block_till_done()
     assert hass.states.get(living).attributes["temperature"] == 19.0
+
+
+async def test_panel_api_lists_entities(hass: HomeAssistant, boiler, hass_ws_client) -> None:
+    entry = await run_wizard(hass)
+    client = await hass_ws_client(hass)
+    await client.send_json({"id": 1, "type": "heatcast/entries"})
+    response = await client.receive_json()
+    assert response["success"]
+    [info] = response["result"]
+    assert info["entry_id"] == entry.entry_id
+    assert info["entities"]["flow_setpoint"].startswith("sensor.")
+    assert info["sources"]["flow_entity"] == FLOW
+    assert {room["name"] for room in info["rooms"]} == {"Living room", "Bedroom"}
+    assert all("weight" in room["entities"] for room in info["rooms"])
+
+    await client.send_json(
+        {"id": 2, "type": "heatcast/set_options", "entry_id": entry.entry_id, "individual_rooms": True}
+    )
+    assert (await client.receive_json())["success"]
+    await hass.async_block_till_done()
+    assert hass.states.get("climate.living_room") is not None
