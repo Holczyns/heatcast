@@ -3,16 +3,16 @@ import { type EntryInfo, fetchEntries } from "./api";
 import type { HomeAssistant } from "./ha";
 import { type Localize, type TranslationKey, localizer } from "./localize";
 import { shared } from "./styles";
-import "./view-charts";
+import "./view-guide";
+import "./view-history";
 import "./view-home";
 import "./view-settings";
-import "./view-stats";
 
 const TABS: { id: string; label: TranslationKey; icon: string }[] = [
   { id: "home", label: "tab.home", icon: "mdi:home-thermometer-outline" },
-  { id: "charts", label: "tab.charts", icon: "mdi:chart-line" },
-  { id: "stats", label: "tab.stats", icon: "mdi:chart-bar" },
+  { id: "history", label: "tab.history", icon: "mdi:chart-line" },
   { id: "settings", label: "tab.settings", icon: "mdi:tune-variant" },
+  { id: "guide", label: "tab.guide", icon: "mdi:book-open-variant" },
 ];
 // Give a reloading entry time to come back before its entities are read again.
 const RELOAD_DELAY_MS = 1500;
@@ -111,10 +111,10 @@ class HeatCastPanel extends LitElement {
     if (!entry) return html`<div class="card">${this.localize("no_entry")}</div>`;
     const props = { hass: this.hass, entry, localize: this.localize };
     switch (this.tab) {
-      case "charts":
-        return html`<heatcast-charts .hass=${props.hass} .entry=${entry} .localize=${props.localize}></heatcast-charts>`;
-      case "stats":
-        return html`<heatcast-stats .hass=${props.hass} .entry=${entry} .localize=${props.localize}></heatcast-stats>`;
+      case "history":
+        return html`<heatcast-history .hass=${props.hass} .entry=${entry} .localize=${props.localize}></heatcast-history>`;
+      case "guide":
+        return html`<heatcast-guide language=${this.hass.language}></heatcast-guide>`;
       case "settings":
         return html`<heatcast-settings .hass=${props.hass} .entry=${entry} .localize=${props.localize}></heatcast-settings>`;
       default:

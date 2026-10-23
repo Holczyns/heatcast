@@ -63,17 +63,17 @@ def _temperature(key: str, value, *, diagnostic: bool = False, delta: bool = Fal
 
 SENSORS: tuple[HeatCastSensorDescription, ...] = (
     _temperature("flow_setpoint", lambda _c, s: s.flow),
-    _temperature("curve_flow", lambda _c, s: s.curve),
+    _temperature("curve_flow", lambda _c, s: s.curve, diagnostic=True),
     _temperature("room_temperature", lambda _c, s: s.room.temperature),
-    _temperature("setpoint", lambda _c, s: s.setpoint),
-    _temperature("outdoor_effective", _outdoor("effective")),
+    _temperature("setpoint", lambda _c, s: s.setpoint, diagnostic=True),
+    _temperature("outdoor_effective", _outdoor("effective"), diagnostic=True),
     _temperature("outdoor_switch", _outdoor("switch"), diagnostic=True),
-    _temperature("room_error", lambda _c, s: s.room.error, delta=True),
-    _temperature("room_correction", lambda _c, s: s.correction, delta=True),
+    _temperature("room_error", lambda _c, s: s.room.error, delta=True, diagnostic=True),
+    _temperature("room_correction", lambda _c, s: s.correction, delta=True, diagnostic=True),
     _temperature("proportional", lambda _c, s: s.p_term, delta=True, diagnostic=True),
-    _temperature("forecast_effect", _outdoor("forecast_effect"), delta=True),
-    _temperature("solar_correction", _outdoor("solar"), delta=True),
-    _temperature("wind_correction", _outdoor("wind"), delta=True),
+    _temperature("forecast_effect", _outdoor("forecast_effect"), delta=True, diagnostic=True),
+    _temperature("solar_correction", _outdoor("solar"), delta=True, diagnostic=True),
+    _temperature("wind_correction", _outdoor("wind"), delta=True, diagnostic=True),
     _temperature("forecast_delta", _forecast("delta"), delta=True, diagnostic=True),
     HeatCastSensorDescription(
         key="room_coverage",
@@ -143,6 +143,7 @@ class RoomTemperatureSensor(HeatCastRoomEntity, SensorEntity):
     """Filtered temperature used by the model, or the target sent to the valve."""
 
     _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_native_unit_of_measurement = CELSIUS
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_suggested_display_precision = 1

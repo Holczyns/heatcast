@@ -27,13 +27,11 @@ export class HeatCastHome extends LitElement {
 
   render() {
     return html`
-      <div class="grid">
-        ${this.renderHouse()} ${this.renderBoiler()} ${this.renderWeather()}
-        <section class="card rooms">
+      <div class="top">${this.renderHouse()} ${this.renderBoiler()} ${this.renderWeather()}</div>
+      <section class="card rooms">
           <h2><ha-icon icon="mdi:floor-plan"></ha-icon>${this.localize("rooms")}</h2>
-          <div class="room-grid">${this.entry.rooms.map((room) => this.renderRoom(room))}</div>
-        </section>
-      </div>
+        <div class="room-grid">${this.entry.rooms.map((room) => this.renderRoom(room))}</div>
+      </section>
     `;
   }
 
@@ -190,10 +188,12 @@ export class HeatCastHome extends LitElement {
         ${this.entry.sources.weather
           ? html`<div class="forecast">
               <span class="chip ${valid ? "" : "heat"}">${valid ? `${t("forecast")} · ${t("next_hours", { h: horizon ?? 4 })}` : t("forecast_stale")}</span>
-              <span class="chip"><ha-icon icon="mdi:thermometer"></ha-icon>${deltaValue === undefined ? "–" : formatSigned(this.hass.language, deltaValue)} K</span>
-              <span class="chip"><ha-icon icon="mdi:cloud"></ha-icon>${this.fmt(this.num("forecast_cloud"), 0)} %</span>
-              <span class="chip"><ha-icon icon="mdi:weather-windy"></ha-icon>${this.fmt(this.num("forecast_wind"), 0)} km/h</span>
-              <span class="chip"><ha-icon icon="mdi:white-balance-sunny"></ha-icon>${this.fmt(this.num("forecast_daylight"), 0)} %</span>
+            </div>
+            <div class="forecast-grid">
+              <div><ha-icon icon="mdi:thermometer"></ha-icon><span>${t("forecast_change")}</span><b>${deltaValue === undefined ? "–" : formatSigned(this.hass.language, deltaValue)} K</b></div>
+              <div><ha-icon icon="mdi:cloud-outline"></ha-icon><span>${t("cloud")}</span><b>${this.fmt(this.num("forecast_cloud"), 0)} %</b></div>
+              <div><ha-icon icon="mdi:weather-windy"></ha-icon><span>${t("wind")}</span><b>${this.fmt(this.num("forecast_wind"), 0)} km/h</b></div>
+              <div><ha-icon icon="mdi:white-balance-sunny"></ha-icon><span>${t("daylight")}</span><b>${this.fmt(this.num("forecast_daylight"), 0)} %</b></div>
             </div>`
           : nothing}
       </section>
@@ -261,13 +261,47 @@ export class HeatCastHome extends LitElement {
   static styles = [
     shared,
     css`
-      .grid {
+      .top {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        grid-template-columns: repeat(3, minmax(0, 1fr));
         gap: var(--hc-gap);
+        margin-bottom: var(--hc-gap);
       }
-      .rooms {
-        grid-column: 1 / -1;
+      @media (max-width: 1100px) {
+        .top {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .top .weather {
+          grid-column: 1 / -1;
+        }
+      }
+      @media (max-width: 700px) {
+        .top {
+          grid-template-columns: 1fr;
+        }
+      }
+      .house {
+        display: flex;
+        flex-direction: column;
+      }
+      .house .dial {
+        flex: 1;
+      }
+      .forecast-grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px 16px;
+        margin-top: 12px;
+        font-size: 0.9rem;
+      }
+      .forecast-grid div {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .forecast-grid span {
+        flex: 1;
+        color: var(--hc-muted);
       }
       .big {
         font-size: 3rem;
@@ -418,7 +452,7 @@ export class HeatCastHome extends LitElement {
       }
       .room-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
         gap: 12px;
       }
       .room {
@@ -438,6 +472,9 @@ export class HeatCastHome extends LitElement {
       }
       .room-name {
         font-weight: 500;
+      }
+      .room-foot > span {
+        white-space: nowrap;
       }
       .room-temp {
         margin: 8px 0;

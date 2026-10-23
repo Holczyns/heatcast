@@ -15,7 +15,8 @@ from .const import DOMAIN
 WWW = Path(__file__).parent / "www"
 PANEL_FILE = WWW / "heatcast-panel.js"
 CARD_FILE = WWW / "heatcast-card.js"
-URL_BASE = f"/{DOMAIN}"
+# Must differ from the panel path, or reloading the panel page hits the folder.
+URL_BASE = f"/{DOMAIN}_files"
 
 
 async def async_register_frontend(hass: HomeAssistant) -> None:

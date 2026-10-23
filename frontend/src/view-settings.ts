@@ -79,7 +79,7 @@ export class HeatCastSettings extends LitElement {
     };
     return html`
       <div class="number">
-        <span class="label">${label ?? state.attributes.friendly_name}</span>
+        <span class="label">${label ?? this.shortName(state.attributes.friendly_name ?? entityId)}</span>
         <span class="stepper">
           <button class="round mini" ?disabled=${value <= min} @click=${() => set(value - step)}>−</button>
           <input
@@ -95,6 +95,13 @@ export class HeatCastSettings extends LitElement {
         </span>
       </div>
     `;
+  }
+
+  /** Entity names carry the device name in front; inside the panel it is noise. */
+  private shortName(friendlyName: string): string {
+    const prefix = `${this.entry.title} `;
+    const name = friendlyName.startsWith(prefix) ? friendlyName.slice(prefix.length) : friendlyName;
+    return name.charAt(0).toUpperCase() + name.slice(1);
   }
 
   private renderCurve(): TemplateResult {
@@ -192,14 +199,14 @@ export class HeatCastSettings extends LitElement {
   static styles = [
     shared,
     css`
+      /* Columns instead of a grid: cards of different height leave no holes. */
       .grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-        gap: var(--hc-gap);
-        align-items: start;
+        columns: 3 340px;
+        column-gap: var(--hc-gap);
       }
-      .curve {
-        grid-row: span 2;
+      .grid > section {
+        break-inside: avoid;
+        margin-bottom: var(--hc-gap);
       }
       .number,
       .toggle-row {
