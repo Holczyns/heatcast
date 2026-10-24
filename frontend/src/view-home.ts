@@ -202,12 +202,12 @@ export class HeatCastHome extends LitElement {
 
   private renderRoom(room: RoomInfo): TemplateResult {
     const t = this.localize;
-    const current = numberState(this.hass, room.sensor);
-    const filtered = numberState(this.hass, room.entities.filtered);
+    // Status and scale follow the value shown; the held filter value stands in while the sensor is missing.
+    const current = numberState(this.hass, room.sensor) ?? numberState(this.hass, room.entities.filtered);
     const target = numberState(this.hass, room.entities.target);
     const weight = numberState(this.hass, room.entities.weight);
     const thermostat = room.entities.thermostat;
-    const deviation = target !== undefined && filtered !== undefined ? filtered - target : undefined;
+    const deviation = target !== undefined && current !== undefined ? current - target : undefined;
     const onTarget = deviation !== undefined && Math.abs(deviation) < 0.3;
 
     let status = t("sensor_missing");
