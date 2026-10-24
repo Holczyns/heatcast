@@ -7,6 +7,7 @@ from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
 from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.setup import async_setup_component
 from homeassistant.util import dt as dt_util
 from pytest_homeassistant_custom_component.common import async_fire_time_changed, async_mock_service
@@ -334,3 +335,36 @@ async def test_room_holds_value_while_sensor_entity_is_absent(hass: HomeAssistan
 
     assert coordinator.model.state.filtered == before
     assert coordinator.data.room.coverage == 1.0
+
+
+async def test_lost_outdoor_sensor_is_reported_and_resolved(hass: HomeAssistant, boiler) -> None:
+    entry = await run_wizard(hass)
+    notifications = async_mock_service(hass, "notify", "phone")
+    result = await hass.config_entries.options.async_init(entry.entry_id)
+    result = await hass.config_entries.options.async_configure(
+        result["flow_id"], {"individual_rooms": False, "notify_service": "phone"}
+    )
+    assert result["type"] is FlowResultType.CREATE_ENTRY
+    await hass.async_block_till_done()
+    problem = entity_id(hass, "binary_sensor", "_problem")
+    issue_id = f"{entry.entry_id}_outdoor_lost"
+
+    hass.states.async_set(OUTDOOR, "unavailable")
+    start = dt_util.utcnow().replace(second=30)
+    async_fire_time_changed(hass, start + timedelta(minutes=1))
+    await hass.async_block_till_done()
+    assert hass.states.get(problem).state == "off"
+
+    async_fire_time_changed(hass, start + timedelta(minutes=17))
+    await hass.async_block_till_done()
+    assert hass.states.get(problem).state == "on"
+    assert hass.states.get(problem).attributes["problems"] == ["outdoor_lost"]
+    assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is not None
+    assert notifications[-1].data["title"] == "HeatCast: outdoor temperature lost"
+
+    hass.states.async_set(OUTDOOR, "4.0")
+    async_fire_time_changed(hass, start + timedelta(minutes=18))
+    await hass.async_block_till_done()
+    assert hass.states.get(problem).state == "off"
+    assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is None
+    assert notifications[-1].data["title"] == "HeatCast: resolved"

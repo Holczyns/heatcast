@@ -83,6 +83,24 @@ const EN: Section[] = [
         </li>
         <li>The controller state is stored and survives a Home Assistant restart.</li>
       </ul>
+      <p>
+        HeatCast watches for problems and reports them on the <i>Repairs</i> page, on its <i>Problem</i> sensor and, with
+        a notify service chosen under <i>Settings → Problems and notifications</i>, as a message when a problem starts
+        and when it is resolved:
+      </p>
+      <ul>
+        <li>
+          <b>Boiler does not accept the flow setpoint:</b> for 3 minutes the boiler reports a value 1 K or more away from
+          the one written, outside hot water heating. This also catches writes that fail.
+        </li>
+        <li><b>Room sensors lost:</b> less than half of the room weight has a valid reading for 15 minutes.</li>
+        <li><b>Outdoor temperature lost:</b> the outdoor sensor has no value for 15 minutes.</li>
+        <li>
+          <b>Flow temperature too high:</b> with boiler control on, the measured flow is more than 10 K above the maximum
+          flow temperature for 10 minutes, outside hot water heating.
+        </li>
+      </ul>
+      <p>A stopped Home Assistant cannot report anything; the boiler then falls back to its own control.</p>
     `,
   },
   {

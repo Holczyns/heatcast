@@ -1,4 +1,4 @@
-"""Heating demand and forecast freshness."""
+"""Heating demand, forecast freshness and problems."""
 
 from __future__ import annotations
 
@@ -17,7 +17,13 @@ async def async_setup_entry(
     async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
     coordinator = entry.runtime_data
-    async_add_entities([DemandSensor(coordinator, "demand"), ForecastValidSensor(coordinator, "forecast_valid")])
+    async_add_entities(
+        [
+            DemandSensor(coordinator, "demand"),
+            ForecastValidSensor(coordinator, "forecast_valid"),
+            ProblemSensor(coordinator, "problem"),
+        ]
+    )
 
 
 class DemandSensor(HeatCastEntity, BinarySensorEntity):
@@ -34,3 +40,17 @@ class ForecastValidSensor(HeatCastEntity, BinarySensorEntity):
     @property
     def is_on(self) -> bool:
         return self.coordinator.data.forecast_valid
+
+
+class ProblemSensor(HeatCastEntity, BinarySensorEntity):
+    """On while any fault is reported; the faults are listed as an attribute."""
+
+    _attr_device_class = BinarySensorDeviceClass.PROBLEM
+
+    @property
+    def is_on(self) -> bool:
+        return bool(self.coordinator.faults.active)
+
+    @property
+    def extra_state_attributes(self) -> dict[str, list[str]]:
+        return {"problems": sorted(str(fault) for fault in self.coordinator.faults.active)}

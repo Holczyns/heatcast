@@ -172,6 +172,14 @@
       },
       "forecast_valid": {
         "name": "Forecast up to date"
+      },
+      "problem": {
+        "name": "Problem",
+        "state_attributes": {
+          "problems": {
+            "name": "Problems"
+          }
+        }
       }
     },
     "number": {
@@ -323,11 +331,33 @@
     "step": {
       "init": {
         "title": "HeatCast settings",
-        "description": "Individual room temperatures add a thermostat to every room and a **Room sync** switch. With a single heating circuit and no radiator valves the controller finds a weighted compromise, so not every room will reach its own temperature.",
+        "description": "Individual room temperatures add a thermostat to every room and a **Room sync** switch. With a single heating circuit and no radiator valves the controller finds a weighted compromise, so not every room will reach its own temperature.\n\nHeatCast reports problems on the Repairs page and with its **Problem** sensor. Pick a notify service to get them on your phone as well.",
         "data": {
-          "individual_rooms": "Individual room temperatures"
+          "individual_rooms": "Individual room temperatures",
+          "notify_service": "Notify service"
+        },
+        "data_description": {
+          "notify_service": "Optional, for example mobile_app_your_phone. A message is sent when a problem starts and when it is resolved."
         }
       }
+    }
+  },
+  "issues": {
+    "setpoint_not_accepted": {
+      "title": "{name}: boiler does not accept the flow setpoint",
+      "description": "HeatCast writes {written_flow} °C, the boiler reported {boiler_flow} °C for 3 minutes. Check the boiler and its connection, for example EMS-ESP. If in doubt, turn off **Boiler control**; the boiler then runs on its own curve.\n\nThis issue disappears by itself once the boiler follows the setpoint again."
+    },
+    "room_sensors_lost": {
+      "title": "{name}: room sensors lost",
+      "description": "Less than half of the room weight has had a valid temperature for 15 minutes. The flow temperature follows the heating curve alone until the sensors are back.\n\nThis issue disappears by itself once the sensors report again."
+    },
+    "outdoor_lost": {
+      "title": "{name}: outdoor temperature lost",
+      "description": "The outdoor sensor has had no value for 15 minutes. HeatCast keeps working with the last damped outdoor temperature, which no longer follows the weather.\n\nThis issue disappears by itself once the sensor reports again."
+    },
+    "flow_too_high": {
+      "title": "{name}: flow temperature too high",
+      "description": "The measured flow temperature was {measured_flow} °C for 10 minutes, more than 10 K above the maximum flow temperature, outside hot water heating. Check the boiler and the mixing valve.\n\nThis issue disappears by itself once the flow temperature drops."
     }
   }
 }

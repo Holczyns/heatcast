@@ -40,6 +40,9 @@ It writes the result to any number entity your boiler reads, such as `selflowtem
 - **Radiator valves**: thermostatic valves get their room target, and optionally the room sensor value as an
   external temperature.
 - **Eco setback** applied outside a schedule.
+- **Problem reporting**: a boiler that does not take the setpoint, lost room or outdoor sensors and an
+  unusually high flow temperature show up on the Repairs page and on a problem sensor, and optionally as a
+  notification through any notify service.
 - **Test mode** that sends a fixed flow temperature to check that the boiler accepts it.
 - **Built-in guide** covering the switch-over, failure behaviour and curve tuning.
 

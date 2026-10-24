@@ -24,6 +24,7 @@ from .const import (
     CONF_FLOW_SENSOR,
     CONF_IDLE_FLOW,
     CONF_INDIVIDUAL_ROOMS,
+    CONF_NOTIFY_SERVICE,
     CONF_OUTDOOR_SENSOR,
     CONF_SCHEDULE,
     CONF_SENSOR,
@@ -35,6 +36,7 @@ from .const import (
     DOMAIN,
     SUBENTRY_ROOM,
 )
+from .problems import notify_services
 
 # Entity fields of the main entry: allowed domains and whether they are required.
 SOURCE_FIELDS: dict[str, tuple[tuple[str, ...], bool]] = {
@@ -85,6 +87,8 @@ def _describe(hass: HomeAssistant, entry: ConfigEntry) -> dict[str, Any]:
         "entry_id": entry.entry_id,
         "title": entry.title,
         "individual_rooms": entry.options.get(CONF_INDIVIDUAL_ROOMS, False),
+        "notify_service": entry.options.get(CONF_NOTIFY_SERVICE),
+        "notify_services": notify_services(hass),
         "sources": {key: entry.data.get(key) for key in SOURCE_FIELDS},
         "idle_flow": entry.data.get(CONF_IDLE_FLOW, 0),
         "entities": controller,
@@ -145,16 +149,30 @@ def ws_entries(hass: HomeAssistant, connection: websocket_api.ActiveConnection, 
     {
         probatio.Required("type"): "heatcast/set_options",
         probatio.Required("entry_id"): str,
-        probatio.Required(CONF_INDIVIDUAL_ROOMS): bool,
+        probatio.Optional(CONF_INDIVIDUAL_ROOMS): bool,
+        probatio.Optional(CONF_NOTIFY_SERVICE): probatio.Any(str, None),
     }
 )
 @callback
 def ws_set_options(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
-    """Same option as the options flow; the entry reloads through its update listener."""
+    """Same options as the options flow; fields not sent stay as they are.
+
+    The entry reloads through its update listener.
+    """
     entry = _entry(hass, connection, msg)
     if entry is None:
         return
-    options = {**entry.options, CONF_INDIVIDUAL_ROOMS: msg[CONF_INDIVIDUAL_ROOMS]}
+    options = dict(entry.options)
+    if CONF_INDIVIDUAL_ROOMS in msg:
+        options[CONF_INDIVIDUAL_ROOMS] = msg[CONF_INDIVIDUAL_ROOMS]
+    if CONF_NOTIFY_SERVICE in msg:
+        service = msg[CONF_NOTIFY_SERVICE]
+        if service and not hass.services.has_service("notify", service):
+            connection.send_error(msg["id"], websocket_api.ERR_INVALID_FORMAT, f"notify.{service} does not exist")
+            return
+        options.pop(CONF_NOTIFY_SERVICE, None)
+        if service:
+            options[CONF_NOTIFY_SERVICE] = service
     hass.config_entries.async_update_entry(entry, options=options)
     connection.send_result(msg["id"])
 

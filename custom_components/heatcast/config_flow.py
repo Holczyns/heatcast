@@ -37,6 +37,7 @@ from .const import (
     CONF_HEATING_TYPE,
     CONF_IDLE_FLOW,
     CONF_INDIVIDUAL_ROOMS,
+    CONF_NOTIFY_SERVICE,
     CONF_OUTDOOR_SENSOR,
     CONF_PARAMS,
     CONF_SCHEDULE,
@@ -55,6 +56,7 @@ from .const import (
 )
 from .engine import Params
 from .engine.control import curve_flow
+from .problems import notify_services
 
 PREVIEW_SETPOINT = 20.0
 PREVIEW_OUTDOOR = (15.0, 10.0, 5.0, 0.0, -10.0)
@@ -278,13 +280,22 @@ class HeatCastConfigFlow(ConfigFlow, domain=DOMAIN):
 
 
 class HeatCastOptionsFlow(OptionsFlow):
-    """Features that change the set of entities; the entry reloads after saving."""
+    """Room features and notifications; the entry reloads after saving."""
 
     async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
         if user_input is not None:
             return self.async_create_entry(data=user_input)
-        current = self.config_entry.options.get(CONF_INDIVIDUAL_ROOMS, False)
-        schema = probatio.Schema({probatio.Required(CONF_INDIVIDUAL_ROOMS, default=current): bool})
+        options = self.config_entry.options
+        services = notify_services(self.hass)
+        notify_field = _optional(CONF_NOTIFY_SERVICE, dict(options))
+        schema = probatio.Schema(
+            {
+                probatio.Required(CONF_INDIVIDUAL_ROOMS, default=options.get(CONF_INDIVIDUAL_ROOMS, False)): bool,
+                notify_field: SelectSelector(
+                    SelectSelectorConfig(options=services, mode=SelectSelectorMode.DROPDOWN, custom_value=True)
+                ),
+            }
+        )
         return self.async_show_form(step_id="init", data_schema=schema)
 
 

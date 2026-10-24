@@ -7,7 +7,7 @@ of the radiator valves configured in rooms.
 
 State kept across restarts (Store): tuning parameters, room weights and
 targets, room synchronisation, model state, control switch and heating
-on/off.
+on/off. Fault timers are not kept; they start again after a restart.
 """
 
 from __future__ import annotations
@@ -29,7 +29,9 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     CONF_BLOCK_ENTITY,
+    CONF_DHW_SENSOR,
     CONF_FLOW_ENTITY,
+    CONF_FLOW_SENSOR,
     CONF_IDLE_FLOW,
     CONF_INDIVIDUAL_ROOMS,
     CONF_OUTDOOR_SENSOR,
@@ -53,6 +55,8 @@ from .const import (
 )
 from .engine import (
     RELEASE,
+    FaultInputs,
+    FaultMonitor,
     ForecastHour,
     Inputs,
     Model,
@@ -62,9 +66,11 @@ from .engine import (
     RoomConfig,
     RoomReading,
     Snapshot,
+    conditions,
     decide_output,
     summarize_forecast,
 )
+from .problems import async_clear_issues, async_report
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -100,6 +106,9 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
         self._test_timer: CALLBACK_TYPE | None = None
         # When an entity that does not exist (yet) was first looked up; kept until it appears.
         self._absent_since: dict[str, datetime] = {}
+        self.faults = FaultMonitor()
+        # Flow setpoint written in the last scan, compared with what the boiler reports.
+        self._written_flow: int | None = None
 
     # Configuration views
 
@@ -150,6 +159,7 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
         state.filtered = {key: value for key, value in state.filtered.items() if key in self.rooms}
         self.model = Model(self._params(), self._room_configs(), state)
 
+        async_clear_issues(self.hass, self.entry)
         now = dt_util.now()
         # The weather integration may still be starting; do not hold up Home Assistant for it.
         self.entry.async_create_background_task(
@@ -286,6 +296,7 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
             snapshot = self.model.evaluate(inputs, now)
 
         await self._async_write_boiler(snapshot)
+        await self._async_check_faults(snapshot, inputs, now)
         if is_step:
             await self._async_write_valves(snapshot, inputs)
             self._schedule_save()
@@ -314,7 +325,39 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
             has_block_switch=bool(block_entity),
             idle_flow=round(options.get(CONF_IDLE_FLOW, 0)),
         )
+        self._written_flow = command.flow
         await self._async_send(command)
+
+    async def _async_check_faults(self, snapshot: Snapshot, inputs: Inputs, now: datetime) -> None:
+        options = self.options
+        flow_state = self.hass.states.get(options[CONF_FLOW_ENTITY])
+        boiler_flow = _number(flow_state.state) if flow_state else None
+        measured_state = self.hass.states.get(options.get(CONF_FLOW_SENSOR) or "")
+        measured_flow = _number(measured_state.state) if measured_state else None
+        dhw_sensor = options.get(CONF_DHW_SENSOR)
+        hot_water = bool(dhw_sensor) and self.hass.states.is_state(dhw_sensor, STATE_ON)
+        present = conditions(
+            FaultInputs(
+                control_active=self.control_active,
+                written_flow=self._written_flow,
+                boiler_flow=boiler_flow,
+                hot_water=hot_water,
+                has_rooms=bool(self.rooms),
+                coverage=snapshot.room.coverage,
+                outdoor=inputs.outdoor,
+                measured_flow=measured_flow,
+                flow_max=self.params["flow_max"],
+            )
+        )
+        raised, cleared = self.faults.update(present, now)
+        if not (raised or cleared):
+            return
+        values = {
+            "written_flow": "unknown" if self._written_flow is None else str(self._written_flow),
+            "boiler_flow": "unknown" if boiler_flow is None else f"{boiler_flow:g}",
+            "measured_flow": "unknown" if measured_flow is None else f"{measured_flow:g}",
+        }
+        await async_report(self.hass, self.entry, raised, cleared, values)
 
     async def _async_send(self, command: OutputCommand) -> None:
         options = self.options

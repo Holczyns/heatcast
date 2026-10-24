@@ -14,6 +14,7 @@ from .const import DOMAIN
 from .coordinator import HeatCastCoordinator
 from .entity import controller_device_info
 from .frontend import async_register_frontend
+from .problems import async_clear_issues
 from .websocket import async_register_commands
 
 PLATFORMS = (
@@ -55,6 +56,10 @@ async def async_unload_entry(hass: HomeAssistant, entry: HeatCastConfigEntry) ->
     if unloaded:
         await entry.runtime_data.async_shutdown()
     return unloaded
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: HeatCastConfigEntry) -> None:
+    async_clear_issues(hass, entry)
 
 
 def _remove_individual_room_entities(hass: HomeAssistant, entry: HeatCastConfigEntry) -> None:

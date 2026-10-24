@@ -1,5 +1,5 @@
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
-import { type EntryInfo, setIndividualRooms } from "./api";
+import { type EntryInfo, setIndividualRooms, setNotifyService } from "./api";
 import type { CurveParams } from "./curve-chart";
 import "./curve-chart";
 import { type HomeAssistant, fireEvent, isOn, numberState } from "./ha";
@@ -46,7 +46,7 @@ export class HeatCastSettings extends LitElement {
           ${this.renderBoiler()}
           <heatcast-sources-card .hass=${this.hass} .entry=${this.entry} .localize=${this.localize}></heatcast-sources-card>
           <heatcast-rooms-card .hass=${this.hass} .entry=${this.entry} .localize=${this.localize}></heatcast-rooms-card>
-          ${this.renderFeatures()}
+          ${this.renderFeatures()} ${this.renderNotifications()}
         </div>
         <div class="rest">
           <div class="column">${this.renderCurve()} ${this.renderParamGroup(0)}</div>
@@ -177,6 +177,41 @@ export class HeatCastSettings extends LitElement {
     `;
   }
 
+  private renderNotifications(): TemplateResult {
+    const t = this.localize;
+    const problemState = this.hass.states[this.entry.entities.problem];
+    const problems = (problemState?.attributes.problems as string[] | undefined) ?? [];
+    const services = [...this.entry.notify_services];
+    const current = this.entry.notify_service;
+    if (current && !services.includes(current)) services.unshift(current);
+    return html`
+      <section class="card">
+        <h2>${t("settings.notifications")}</h2>
+        ${problems.length
+          ? html`<ul class="problems">
+              ${problems.map((problem) => html`<li>${t(`problem.${problem}` as TranslationKey)}</li>`)}
+            </ul>`
+          : html`<p class="muted">${t("settings.no_problems")}</p>`}
+        <div class="field">
+          <label>${t("settings.notify_service")}</label>
+          <select
+            @change=${async (event: Event) => {
+              const value = (event.target as HTMLSelectElement).value || null;
+              await setNotifyService(this.hass, this.entry.entry_id, value);
+              fireEvent(this, "heatcast-entries-changed");
+            }}
+          >
+            <option value="" ?selected=${!current}>${t("settings.notify_none")}</option>
+            ${services.map(
+              (service) => html`<option value=${service} ?selected=${service === current}>notify.${service}</option>`,
+            )}
+          </select>
+        </div>
+        <p class="muted small">${t("settings.notify_hint")}</p>
+      </section>
+    `;
+  }
+
   static styles = [
     shared,
     controlStyles,
@@ -253,6 +288,21 @@ export class HeatCastSettings extends LitElement {
       }
       a {
         color: var(--primary-color);
+      }
+      select {
+        width: 100%;
+        box-sizing: border-box;
+        padding: 6px 8px;
+        border: 1px solid var(--divider-color);
+        border-radius: 6px;
+        background: var(--card-background-color, transparent);
+        color: var(--primary-text-color);
+        font: inherit;
+      }
+      .problems {
+        margin: 0 0 10px;
+        padding-left: 20px;
+        color: var(--error-color, #db4437);
       }
     `,
   ];

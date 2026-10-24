@@ -20,6 +20,8 @@ export interface EntryInfo {
   entry_id: string;
   title: string;
   individual_rooms: boolean;
+  notify_service: string | null;
+  notify_services: string[];
   sources: Record<string, string | null>;
   idle_flow: number;
   entities: Record<string, string>;
@@ -32,6 +34,10 @@ export function fetchEntries(hass: HomeAssistant): Promise<EntryInfo[]> {
 
 export function setIndividualRooms(hass: HomeAssistant, entryId: string, enabled: boolean): Promise<void> {
   return hass.callWS({ type: "heatcast/set_options", entry_id: entryId, individual_rooms: enabled });
+}
+
+export function setNotifyService(hass: HomeAssistant, entryId: string, service: string | null): Promise<void> {
+  return hass.callWS({ type: "heatcast/set_options", entry_id: entryId, notify_service: service });
 }
 
 export function updateSources(
