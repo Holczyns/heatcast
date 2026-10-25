@@ -69,6 +69,7 @@ from .engine import (
     conditions,
     decide_output,
     summarize_forecast,
+    undetermined,
 )
 from .problems import async_clear_issues, async_report
 
@@ -336,20 +337,18 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
         measured_flow = _number(measured_state.state) if measured_state else None
         dhw_sensor = options.get(CONF_DHW_SENSOR)
         hot_water = bool(dhw_sensor) and self.hass.states.is_state(dhw_sensor, STATE_ON)
-        present = conditions(
-            FaultInputs(
-                control_active=self.control_active,
-                written_flow=self._written_flow,
-                boiler_flow=boiler_flow,
-                hot_water=hot_water,
-                has_rooms=bool(self.rooms),
-                coverage=snapshot.room.coverage,
-                outdoor=inputs.outdoor,
-                measured_flow=measured_flow,
-                flow_max=self.params["flow_max"],
-            )
+        fault_inputs = FaultInputs(
+            control_active=self.control_active,
+            written_flow=self._written_flow,
+            boiler_flow=boiler_flow,
+            hot_water=hot_water,
+            has_rooms=bool(self.rooms),
+            coverage=snapshot.room.coverage,
+            outdoor=inputs.outdoor,
+            measured_flow=measured_flow,
+            flow_max=self.params["flow_max"],
         )
-        raised, cleared = self.faults.update(present, now)
+        raised, cleared = self.faults.update(conditions(fault_inputs), now, undetermined(fault_inputs))
         if not (raised or cleared):
             return
         values = {

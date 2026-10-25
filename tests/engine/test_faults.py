@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta
 
-from engine.faults import Fault, FaultInputs, FaultMonitor, conditions
+from engine.faults import Fault, FaultInputs, FaultMonitor, conditions, undetermined
 
 START = datetime(2026, 1, 15, 6, 0)
 
@@ -73,3 +73,27 @@ def test_interrupted_condition_starts_its_delay_again():
     monitor.update(present, START + timedelta(minutes=2, seconds=30))
     assert monitor.update(present, START + timedelta(minutes=5)) == (set(), set())
     assert monitor.update(present, START + timedelta(minutes=5, seconds=30)) == (present, set())
+
+
+def test_hot_water_neither_clears_nor_raises():
+    monitor = FaultMonitor()
+    present = {Fault.SETPOINT_NOT_ACCEPTED}
+    hot_water = undetermined(inputs(hot_water=True))
+    monitor.update(present, START)
+    assert monitor.update(present, START + timedelta(minutes=3)) == (present, set())
+    # Hot water: the boiler reports its own setpoint, the reported fault stays.
+    assert monitor.update(set(), START + timedelta(minutes=4), hot_water) == (set(), set())
+    assert monitor.active == present
+    # Still not accepted after hot water: no second notification.
+    assert monitor.update(present, START + timedelta(minutes=6)) == (set(), set())
+
+
+def test_condition_starting_during_hot_water_waits_for_it_to_end():
+    monitor = FaultMonitor()
+    hot_water = undetermined(inputs(hot_water=True))
+    assert monitor.update(set(), START, hot_water) == (set(), set())
+    assert monitor.update({Fault.SETPOINT_NOT_ACCEPTED}, START + timedelta(minutes=1)) == (set(), set())
+    assert monitor.update({Fault.SETPOINT_NOT_ACCEPTED}, START + timedelta(minutes=4)) == (
+        {Fault.SETPOINT_NOT_ACCEPTED},
+        set(),
+    )

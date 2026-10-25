@@ -1,7 +1,9 @@
 """Fault detection: conditions read from the current scan, reported after a delay.
 
 A condition becomes a fault once it has held for its delay and is cleared
-on the first scan it no longer holds. State kept between scans: when each
+on the first scan it no longer holds. While a condition cannot be judged
+(the boiler heats hot water and reports its own setpoint), it is held:
+neither started, cleared nor raised. State kept between scans: when each
 condition started and which faults are reported; both start empty after a
 restart.
 """
@@ -79,6 +81,13 @@ def conditions(inputs: FaultInputs) -> set[Fault]:
     return found
 
 
+def undetermined(inputs: FaultInputs) -> set[Fault]:
+    """Conditions that cannot be judged in this scan; their state is held."""
+    if inputs.hot_water:
+        return {Fault.SETPOINT_NOT_ACCEPTED, Fault.FLOW_TOO_HIGH}
+    return set()
+
+
 @dataclass(slots=True)
 class FaultMonitor:
     since: dict[Fault, datetime] = field(default_factory=dict)
@@ -86,15 +95,20 @@ class FaultMonitor:
     active: set[Fault] = field(default_factory=set)
     """Faults reported right now."""
 
-    def update(self, present: set[Fault], now: datetime) -> tuple[set[Fault], set[Fault]]:
+    def update(
+        self, present: set[Fault], now: datetime, held: set[Fault] | None = None
+    ) -> tuple[set[Fault], set[Fault]]:
         """Advance by one scan; returns the faults raised and cleared in it."""
+        held = held or set()
         for fault in list(self.since):
-            if fault not in present:
+            if (fault not in present) and (fault not in held):
                 del self.since[fault]
-        for fault in present:
+        for fault in present - held:
             self.since.setdefault(fault, now)
 
-        due = {fault for fault, start in self.since.items() if now - start >= DELAYS[fault]}
+        # A held fault keeps its reported state until it can be judged again.
+        due = {fault for fault, start in self.since.items() if (fault not in held) and (now - start >= DELAYS[fault])}
+        due |= self.active & held
         raised = due - self.active
         cleared = self.active - due
         self.active = due

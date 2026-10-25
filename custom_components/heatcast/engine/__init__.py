@@ -1,6 +1,6 @@
 """Control model of HeatCast, free of Home Assistant imports so it can be tested alone."""
 
-from .faults import Fault, FaultInputs, FaultMonitor, conditions
+from .faults import Fault, FaultInputs, FaultMonitor, conditions, undetermined
 from .model import Inputs, Model, ModelState, Snapshot
 from .output import RELEASE, OutputCommand, decide_output
 from .params import Params
@@ -25,4 +25,5 @@ __all__ = [
     "conditions",
     "decide_output",
     "summarize_forecast",
+    "undetermined",
 ]
