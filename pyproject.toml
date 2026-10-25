@@ -1,6 +1,6 @@
 [project]
 name = "heatcast"
-version = "0.1.0"
+version = "0.1.7"
 description = "Weather-compensated flow temperature control for Home Assistant"
 requires-python = ">=3.13"
 license = "MIT"
