@@ -88,6 +88,19 @@ def test_hot_water_neither_clears_nor_raises():
     assert monitor.update(present, START + timedelta(minutes=6)) == (set(), set())
 
 
+def test_hot_water_time_does_not_count_toward_the_delay():
+    monitor = FaultMonitor()
+    present = {Fault.SETPOINT_NOT_ACCEPTED}
+    hot_water = undetermined(inputs(hot_water=True))
+    monitor.update(present, START)
+    monitor.update(set(), START + timedelta(seconds=30), hot_water)
+    monitor.update(set(), START + timedelta(minutes=5), hot_water)
+    # The boiler still reports its hot water setpoint briefly after the valve returns.
+    assert monitor.update(present, START + timedelta(minutes=5, seconds=30)) == (set(), set())
+    assert monitor.update(set(), START + timedelta(minutes=6)) == (set(), set())
+    assert monitor.active == set()
+
+
 def test_condition_starting_during_hot_water_waits_for_it_to_end():
     monitor = FaultMonitor()
     hot_water = undetermined(inputs(hot_water=True))

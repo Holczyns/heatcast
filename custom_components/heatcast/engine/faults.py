@@ -3,7 +3,8 @@
 A condition becomes a fault once it has held for its delay and is cleared
 on the first scan it no longer holds. While a condition cannot be judged
 (the boiler heats hot water and reports its own setpoint), it is held:
-neither started, cleared nor raised. State kept between scans: when each
+neither cleared nor raised, and a condition not yet reported starts its
+delay again once it can be judged. State kept between scans: when each
 condition started and which faults are reported; both start empty after a
 restart.
 """
@@ -101,7 +102,10 @@ class FaultMonitor:
         """Advance by one scan; returns the faults raised and cleared in it."""
         held = held or set()
         for fault in list(self.since):
-            if (fault not in present) and (fault not in held):
+            gone = (fault not in present) and (fault not in held)
+            # A hold interrupts an unreported condition; its delay starts again afterwards.
+            interrupted = (fault in held) and (fault not in self.active)
+            if gone or interrupted:
                 del self.since[fault]
         for fault in present - held:
             self.since.setdefault(fault, now)
