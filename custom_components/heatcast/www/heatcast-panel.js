@@ -196,8 +196,8 @@ var G=globalThis,V=G.ShadowRoot&&(G.ShadyCSS===void 0||G.ShadyCSS.nativeShadow)&
         <li>
           <b>Low load:</b> when the flow the house needs falls to the <i>Minimum flow temperature</i>, the boiler gets
           the <i>Low-load flow temperature</i>: the burner stays off and the pump keeps the floor water moving. Once the
-          measured flow is within 1 K of the house temperature, space heating is switched off and the pump stops. Heating
-          resumes once the flow the house needs is 1 K above the minimum.
+          measured flow is within 2 K of the house temperature, space heating is switched off and the pump stops. Heating
+          resumes once the flow the house needs is 2 K above the minimum.
         </li>
         <li>
           <b>The room filter</b> passes temperature changes only up to a set speed, so an open window or a few people in a

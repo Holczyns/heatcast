@@ -20,9 +20,9 @@ INTEGRAL_LIMIT = 3.0
 DEMAND_DELAY_S = 30 * 60.0
 
 # Low load ends once the flow the house needs rises this far above the minimum flow temperature (K).
-LOW_LOAD_RELEASE_K = 1.0
+LOW_LOAD_RELEASE_K = 2.0
 # During low load the pump stops once the measured flow is within this of the house temperature (K).
-PUMP_STOP_MARGIN_K = 1.0
+PUMP_STOP_MARGIN_K = 2.0
 
 # Filter, damping and integral advance in fixed steps of this length.
 STATE_STEP_MIN = 5.0

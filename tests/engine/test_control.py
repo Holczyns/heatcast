@@ -107,17 +107,17 @@ def test_delayed_switch_takes_first_value():
     assert DelayedSwitch().update(True, NOW)
 
 
-def test_low_load_starts_at_minimum_and_ends_one_kelvin_above():
+def test_low_load_starts_at_minimum_and_ends_two_kelvin_above():
     assert low_load(False, 22.4, PARAMS) is False
     assert low_load(False, 22.0, PARAMS) is True
-    assert low_load(True, 22.9, PARAMS) is True
-    assert low_load(True, 23.0, PARAMS) is False
+    assert low_load(True, 23.9, PARAMS) is True
+    assert low_load(True, 24.0, PARAMS) is False
     assert low_load(True, None, PARAMS) is False
 
 
 def test_pump_stops_once_flow_reaches_rooms_and_waits_for_end_of_low_load():
-    assert pump_stop(False, True, 22.5, 21.0) is False
-    assert pump_stop(False, True, 22.0, 21.0) is True
+    assert pump_stop(False, True, 23.5, 21.0) is False
+    assert pump_stop(False, True, 23.0, 21.0) is True
     assert pump_stop(True, True, 30.0, 21.0) is True
     assert pump_stop(True, False, 20.0, 21.0) is False
     assert pump_stop(False, True, None, 21.0) is False
@@ -154,7 +154,7 @@ def test_model_ends_low_load_in_cold_house():
     snapshot = model.step(inputs, NOW)
     assert snapshot.low_load is False
     assert snapshot.pump_stop is False
-    assert snapshot.flow > 23
+    assert snapshot.flow >= 24
 
 
 def test_low_load_survives_restart():

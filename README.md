@@ -98,8 +98,8 @@ integral holds while there is no demand, no room data, or the output is already 
 When the flow the house needs (curve plus room correction) falls to the minimum flow temperature, the boiler cannot
 deliver less and would only cycle. HeatCast then sends the **low-load flow temperature** (10 °C by default): the
 burner stays off and the pump keeps the water moving through the floor. Once the measured flow has cooled to within
-1 K of the house temperature, space heating is switched off and the pump stops. Both end once the flow the house
-needs rises 1 K above the minimum.
+2 K of the house temperature, space heating is switched off and the pump stops. Both end once the flow the house
+needs rises 2 K above the minimum.
 
 The model lives in `custom_components/heatcast/engine` without Home Assistant imports. A replay test runs recorded
 history from a real house through it and checks every value at every five-minute step.
