@@ -60,6 +60,7 @@ PARAMETERS: tuple[NumberEntityDescription, ...] = (
     _number("summer_temp", 5, 25, 0.5, CELSIUS, temperature=True),
     _number("flow_min", 10, 40, 1, CELSIUS, temperature=True),
     _number("flow_max", 25, 85, 1, CELSIUS, temperature=True),
+    _number("low_load_flow", 0, 40, 1, CELSIUS, temperature=True),
 )
 
 # Model state exposed for seeding, as the helpers it replaces allowed.

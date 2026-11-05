@@ -102,7 +102,7 @@ export class HeatCastSettings extends LitElement {
           language=${LANGUAGE}
         ></heatcast-curve-chart>
         <p class="muted small">${this.localize("settings.curve_hint")}</p>
-        ${CURVE_KEYS.map((key) => this.renderNumber(this.entry.entities[key], this.paramLabel(key)))}
+        ${[...CURVE_KEYS, "low_load_flow"].map((key) => this.renderNumber(this.entry.entities[key], this.paramLabel(key)))}
       </section>
     `;
   }

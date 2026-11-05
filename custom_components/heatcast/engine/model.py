@@ -6,7 +6,8 @@ State kept between steps, each for a reason:
 - integral of the room correction,
 - last forecast summary (result of a service call, not of an entity),
 - heating demand with its switching delay,
-- the low-load block (it releases at a higher flow than it blocks, so it needs its previous state).
+- low load and the stopped pump during it (each ends at a different value than it starts, so it needs its
+  previous state).
 Everything else is recomputed from the current inputs on every call.
 """
 
@@ -28,6 +29,8 @@ class Inputs:
     enabled: bool = True
     synchronised: bool = True
     """Every room follows the house setpoint instead of its own target."""
+    measured_flow: float | None = None
+    """Flow temperature measured by the boiler, None without a sensor."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,9 +47,11 @@ class Snapshot:
     demand_wanted: bool
     demand: bool
     low_load: bool
-    """Space heating is blocked because the flow it needs is at the minimum."""
+    """The flow the house needs is at the minimum; the boiler gets low_load_flow so only the pump runs."""
+    pump_stop: bool
+    """During low load the flow has cooled to the rooms and space heating is switched off."""
     flow: int | None
-    """Flow setpoint; 0 without demand or while blocked for low load."""
+    """Flow setpoint; low_load_flow during low load, 0 without demand or with the pump stopped."""
     room_targets: dict[str, float]
 
 
@@ -58,6 +63,7 @@ class ModelState:
     forecast: weather.ForecastSummary | None = None
     demand: control.DelayedSwitch = field(default_factory=control.DelayedSwitch)
     low_load: bool = False
+    pump_stop: bool = False
 
     def as_dict(self) -> dict[str, Any]:
         forecast = None
@@ -78,6 +84,7 @@ class ModelState:
             "demand": self.demand.state,
             "demand_pending_since": pending.isoformat() if pending else None,
             "low_load": self.low_load,
+            "pump_stop": self.pump_stop,
         }
 
     @classmethod
@@ -104,14 +111,23 @@ class ModelState:
             forecast=forecast,
             demand=demand,
             low_load=bool(data.get("low_load", False)),
+            pump_stop=bool(data.get("pump_stop", False)),
         )
 
 
 class Model:
-    def __init__(self, params: Params, room_configs: list[rooms.RoomConfig], state: ModelState | None = None) -> None:
+    def __init__(
+        self,
+        params: Params,
+        room_configs: list[rooms.RoomConfig],
+        state: ModelState | None = None,
+        low_load: bool = True,
+    ) -> None:
         self.params = params
         self.rooms = room_configs
         self.state = state if state is not None else ModelState()
+        self.low_load = low_load
+        """False runs the curve down to the minimum flow, as before low load was added."""
 
     def set_forecast(self, forecast: weather.ForecastSummary | None) -> None:
         """Store a new forecast; a failed fetch keeps the old one until it expires."""
@@ -157,9 +173,12 @@ class Model:
                 params,
             )
 
-        # The low-load block judges the flow after the integral step; it changes only once per step.
+        # Low load judges the flow after the integral step; both states change only once per step.
         after = self.evaluate(inputs, now)
-        self.state.low_load = control.low_load(self.state.low_load, after.flow_raw, params)
+        self.state.low_load = self.low_load and control.low_load(self.state.low_load, after.flow_raw, params)
+        self.state.pump_stop = control.pump_stop(
+            self.state.pump_stop, self.state.low_load, inputs.measured_flow, after.room.temperature
+        )
         return self.evaluate(inputs, now)
 
     def evaluate(self, inputs: Inputs, now: datetime) -> Snapshot:
@@ -179,7 +198,12 @@ class Model:
         wanted = control.demand_wanted(inputs.enabled, switch_temp, params)
         demand = self.state.demand.update(wanted, now)
         low_load = demand and self.state.low_load
-        flow = control.flow_setpoint(demand and (not low_load), curve, room_correction, params)
+        pump_stop = low_load and self.state.pump_stop
+        flow = control.flow_setpoint(demand, curve, room_correction, params)
+        if low_load and (flow is not None):
+            flow = round(params.low_load_flow)
+        if pump_stop and (flow is not None):
+            flow = 0
         flow_raw = None
         if curve is not None:
             flow_raw = curve + room_correction
@@ -197,6 +221,7 @@ class Model:
             demand_wanted=wanted,
             demand=demand,
             low_load=low_load,
+            pump_stop=pump_stop,
             flow=flow,
             room_targets=targets,
         )

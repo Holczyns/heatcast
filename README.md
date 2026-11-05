@@ -95,9 +95,11 @@ The heating curve is `T = T_set + (T_design − T_set) · r^(1/n) + offset`, whe
 the design outdoor temperature. The room correction is limited to ±3 K for each of the P and I terms, and the
 integral holds while there is no demand, no room data, or the output is already at a limit.
 
-When the flow the house needs (curve plus room correction) falls to the minimum flow temperature, space heating is
-blocked instead of running the boiler at a flow it cannot hold, which only makes it cycle. The block lifts once that
-flow rises 1 K above the minimum. While blocked the flow setpoint shows 0.
+When the flow the house needs (curve plus room correction) falls to the minimum flow temperature, the boiler cannot
+deliver less and would only cycle. HeatCast then sends the **low-load flow temperature** (10 °C by default): the
+burner stays off and the pump keeps the water moving through the floor. Once the measured flow has cooled to within
+1 K of the house temperature, space heating is switched off and the pump stops. Both end once the flow the house
+needs rises 1 K above the minimum.
 
 The model lives in `custom_components/heatcast/engine` without Home Assistant imports. A replay test runs recorded
 history from a real house through it and checks every value at every five-minute step.

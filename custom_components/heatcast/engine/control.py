@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from .params import DEMAND_DELAY_S, INTEGRAL_LIMIT, LOW_LOAD_RELEASE_K, PROPORTIONAL_LIMIT, Params
+from .params import DEMAND_DELAY_S, INTEGRAL_LIMIT, LOW_LOAD_RELEASE_K, PROPORTIONAL_LIMIT, PUMP_STOP_MARGIN_K, Params
 
 
 def eco_shift(comfort_active: bool, params: Params) -> float:
@@ -75,19 +75,33 @@ def demand_wanted(enabled: bool, switch_temp: float | None, params: Params) -> b
     return enabled and (switch_temp < params.summer_temp)
 
 
-def low_load(blocked: bool, flow_raw: float | None, params: Params) -> bool:
-    """Whether space heating is blocked for low load, given whether it was blocked in the previous step.
+def low_load(active: bool, flow_raw: float | None, params: Params) -> bool:
+    """Whether the house is at low load, given whether it was in the previous step.
 
-    It blocks once the flow the house needs is at or below the minimum flow temperature: the boiler could not
-    deliver less, so it would only cycle. It is released once that flow rises LOW_LOAD_RELEASE_K above the
-    minimum. Without a flow there is nothing to judge and heating is not blocked.
+    Low load starts once the flow the house needs is at or below the minimum flow temperature: the boiler could
+    not deliver less, so it would only cycle. It ends once that flow rises LOW_LOAD_RELEASE_K above the minimum.
+    Without a flow there is nothing to judge.
     """
-    if (not params.low_load_block) or (flow_raw is None):
+    if flow_raw is None:
         return False
-    release_at = params.flow_min + LOW_LOAD_RELEASE_K
-    if blocked:
-        return flow_raw < release_at
+    if active:
+        return flow_raw < params.flow_min + LOW_LOAD_RELEASE_K
     return flow_raw <= params.flow_min
+
+
+def pump_stop(stopped: bool, low_load_active: bool, measured_flow: float | None, house: float | None) -> bool:
+    """Whether space heating is switched off during low load, given whether it was in the previous step.
+
+    While the pump runs the water cools towards the rooms; once the measured flow is within PUMP_STOP_MARGIN_K of
+    the house temperature it gives no more heat and the pump only costs power. It stays off until low load ends.
+    """
+    if not low_load_active:
+        return False
+    if stopped:
+        return True
+    if (measured_flow is None) or (house is None):
+        return False
+    return measured_flow <= house + PUMP_STOP_MARGIN_K
 
 
 def flow_setpoint(demand: bool, curve: float | None, room_correction: float, params: Params) -> int | None:

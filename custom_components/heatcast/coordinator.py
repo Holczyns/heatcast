@@ -238,7 +238,12 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
             enabled=self.heating_enabled,
             # Without the option every room follows the house setpoint.
             synchronised=self.rooms_synchronised or not self.individual_rooms,
+            measured_flow=self._measured_flow(),
         )
+
+    def _measured_flow(self) -> float | None:
+        measured_state = self.hass.states.get(self.options.get(CONF_FLOW_SENSOR) or "")
+        return _number(measured_state.state) if measured_state else None
 
     async def _async_refresh_forecast(self, now: datetime) -> None:
         weather = self.options.get(CONF_WEATHER)
@@ -321,7 +326,7 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
             control_active=self.control_active,
             test_mode=self.test_mode,
             test_flow=round(self.test_flow),
-            demand=snapshot.demand and (not snapshot.low_load),
+            demand=snapshot.demand and (not snapshot.pump_stop),
             flow=snapshot.flow,
             has_block_switch=bool(block_entity),
             idle_flow=round(options.get(CONF_IDLE_FLOW, 0)),
@@ -333,8 +338,7 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
         options = self.options
         flow_state = self.hass.states.get(options[CONF_FLOW_ENTITY])
         boiler_flow = _number(flow_state.state) if flow_state else None
-        measured_state = self.hass.states.get(options.get(CONF_FLOW_SENSOR) or "")
-        measured_flow = _number(measured_state.state) if measured_state else None
+        measured_flow = self._measured_flow()
         dhw_sensor = options.get(CONF_DHW_SENSOR)
         hot_water = bool(dhw_sensor) and self.hass.states.is_state(dhw_sensor, STATE_ON)
         fault_inputs = FaultInputs(

@@ -237,6 +237,9 @@
       "flow_max": {
         "name": "Maximum flow temperature"
       },
+      "low_load_flow": {
+        "name": "Low-load flow temperature"
+      },
       "integral": {
         "name": "Integral"
       },

@@ -138,9 +138,10 @@ const EN: Section[] = [
           pushes further into it.
         </li>
         <li>
-          <b>Low load:</b> when the flow the house needs falls to the <i>Minimum flow temperature</i>, space heating is
-          blocked so the boiler does not cycle. It runs again once that flow is 1 K above the minimum; meanwhile the flow
-          setpoint shows 0.
+          <b>Low load:</b> when the flow the house needs falls to the <i>Minimum flow temperature</i>, the boiler gets
+          the <i>Low-load flow temperature</i>: the burner stays off and the pump keeps the floor water moving. Once the
+          measured flow is within 1 K of the house temperature, space heating is switched off and the pump stops. Heating
+          resumes once the flow the house needs is 1 K above the minimum.
         </li>
         <li>
           <b>The room filter</b> passes temperature changes only up to a set speed, so an open window or a few people in a

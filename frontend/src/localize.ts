@@ -39,6 +39,7 @@ const en = {
   "p.curve_offset": "Shift",
   "p.flow_min": "Minimum flow temperature",
   "p.flow_max": "Maximum flow temperature",
+  "p.low_load_flow": "Low-load flow temperature",
   "p.summer_temp": "Heating off above",
   "p.test_flow": "Test flow temperature",
   "history.raw": "Every change as recorded",

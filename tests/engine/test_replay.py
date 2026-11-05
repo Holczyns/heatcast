@@ -106,8 +106,6 @@ def params_at(history: dict[str, Series], moment: datetime) -> Params:
     values = {field: history["input_number." + name].number(moment) for field, name in PARAM_FIELDS.items()}
     # The recorded implementation stored eco as an absolute temperature.
     values["eco_offset"] = history["input_number.eco_temp"].number(moment) - values["comfort_temp"]
-    # The recorded implementation had no low-load block.
-    values["low_load_block"] = False
     return Params(**values)
 
 
@@ -144,7 +142,8 @@ def replay():
         integral=history["input_number.integral"].number(before),
         demand=DelayedSwitch(state=history["binary_sensor.demand"].at(before)[0] == "on"),
     )
-    model = Model(params_at(history, tick), rooms_at(history, tick), state)
+    # The recorded implementation had no low load.
+    model = Model(params_at(history, tick), rooms_at(history, tick), state, low_load=False)
 
     rows = []
     while tick <= end:

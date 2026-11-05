@@ -19,9 +19,10 @@ INTEGRAL_LIMIT = 3.0
 
 DEMAND_DELAY_S = 30 * 60.0
 
-# The boiler is blocked while the flow it should get stays at the minimum; it is released once the flow
-# rises this far above the minimum (K).
+# Low load ends once the flow the house needs rises this far above the minimum flow temperature (K).
 LOW_LOAD_RELEASE_K = 1.0
+# During low load the pump stops once the measured flow is within this of the house temperature (K).
+PUMP_STOP_MARGIN_K = 1.0
 
 # Filter, damping and integral advance in fixed steps of this length.
 STATE_STEP_MIN = 5.0
@@ -62,5 +63,5 @@ class Params:
     summer_temp: float = 12.0
     flow_min: float = 22.0
     flow_max: float = 45.0
-    low_load_block: bool = True
-    """Block space heating while the flow it needs does not exceed flow_min."""
+    low_load_flow: float = 10.0
+    """Setpoint sent while the flow the house needs is at the minimum: the burner stays off, the pump runs."""

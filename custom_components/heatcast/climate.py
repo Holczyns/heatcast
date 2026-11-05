@@ -44,7 +44,7 @@ class _ThermostatBase(ClimateEntity):
 
     def _heating_now(self) -> bool:
         snapshot = self.coordinator.data
-        heating = snapshot.demand and bool(snapshot.flow)
+        heating = snapshot.demand and bool(snapshot.flow) and (not snapshot.low_load)
         flame_sensor = self.coordinator.options.get(CONF_FLAME_SENSOR)
         if flame_sensor:
             heating = self.hass.states.is_state(flame_sensor, STATE_ON)

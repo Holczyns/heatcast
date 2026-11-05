@@ -11,6 +11,7 @@ from engine.control import (
     integrate,
     low_load,
     proportional,
+    pump_stop,
 )
 from engine.model import Inputs, Model, ModelState
 from engine.params import Params
@@ -106,39 +107,56 @@ def test_delayed_switch_takes_first_value():
     assert DelayedSwitch().update(True, NOW)
 
 
-def test_low_load_blocks_at_minimum_and_releases_one_kelvin_above():
+def test_low_load_starts_at_minimum_and_ends_one_kelvin_above():
     assert low_load(False, 22.4, PARAMS) is False
     assert low_load(False, 22.0, PARAMS) is True
     assert low_load(True, 22.9, PARAMS) is True
     assert low_load(True, 23.0, PARAMS) is False
-
-
-def test_low_load_off_or_without_flow():
-    assert low_load(True, 20.0, Params(low_load_block=False)) is False
     assert low_load(True, None, PARAMS) is False
 
 
-def _model(room: float, blocked: bool) -> tuple[Model, Inputs]:
-    model = Model(Params(comfort_temp=21.0, curve_offset=-3.0), [RoomConfig(key="room")], ModelState(low_load=blocked))
-    inputs = Inputs(readings={"room": RoomReading(value=room)}, outdoor=10.0, comfort_active=True)
+def test_pump_stops_once_flow_reaches_rooms_and_waits_for_end_of_low_load():
+    assert pump_stop(False, True, 22.5, 21.0) is False
+    assert pump_stop(False, True, 22.0, 21.0) is True
+    assert pump_stop(True, True, 30.0, 21.0) is True
+    assert pump_stop(True, False, 20.0, 21.0) is False
+    assert pump_stop(False, True, None, 21.0) is False
+
+
+def _model(room: float, low_load_active: bool, measured_flow: float | None = None) -> tuple[Model, Inputs]:
+    state = ModelState(low_load=low_load_active)
+    model = Model(Params(comfort_temp=21.0, curve_offset=-3.0), [RoomConfig(key="room")], state)
+    inputs = Inputs(
+        readings={"room": RoomReading(value=room)}, outdoor=10.0, comfort_active=True, measured_flow=measured_flow
+    )
     model.prime(inputs)
     return model, inputs
 
 
-def test_model_blocks_warm_house_and_writes_no_flow():
-    model, inputs = _model(22.5, blocked=False)
+def test_model_sends_low_load_flow_to_warm_house():
+    model, inputs = _model(22.5, low_load_active=False, measured_flow=25.0)
     snapshot = model.step(inputs, NOW)
     assert snapshot.demand is True
     assert snapshot.low_load is True
+    assert snapshot.pump_stop is False
+    assert snapshot.flow == 10
+
+
+def test_model_stops_pump_once_flow_reaches_rooms():
+    model, inputs = _model(22.5, low_load_active=True, measured_flow=23.0)
+    snapshot = model.step(inputs, NOW)
+    assert snapshot.pump_stop is True
     assert snapshot.flow == 0
 
 
-def test_model_releases_cold_house():
-    model, inputs = _model(19.5, blocked=True)
+def test_model_ends_low_load_in_cold_house():
+    model, inputs = _model(19.5, low_load_active=True, measured_flow=20.0)
     snapshot = model.step(inputs, NOW)
     assert snapshot.low_load is False
+    assert snapshot.pump_stop is False
     assert snapshot.flow > 23
 
 
 def test_low_load_survives_restart():
-    assert ModelState.from_dict(ModelState(low_load=True).as_dict()).low_load is True
+    state = ModelState.from_dict(ModelState(low_load=True, pump_stop=True).as_dict())
+    assert (state.low_load, state.pump_stop) == (True, True)
