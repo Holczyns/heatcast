@@ -95,6 +95,10 @@ The heating curve is `T = T_set + (T_design − T_set) · r^(1/n) + offset`, whe
 the design outdoor temperature. The room correction is limited to ±3 K for each of the P and I terms, and the
 integral holds while there is no demand, no room data, or the output is already at a limit.
 
+When the flow the house needs (curve plus room correction) falls to the minimum flow temperature, space heating is
+blocked instead of running the boiler at a flow it cannot hold, which only makes it cycle. The block lifts once that
+flow rises 1 K above the minimum. While blocked the flow setpoint shows 0.
+
 The model lives in `custom_components/heatcast/engine` without Home Assistant imports. A replay test runs recorded
 history from a real house through it and checks every value at every five-minute step.
 

@@ -106,6 +106,8 @@ def params_at(history: dict[str, Series], moment: datetime) -> Params:
     values = {field: history["input_number." + name].number(moment) for field, name in PARAM_FIELDS.items()}
     # The recorded implementation stored eco as an absolute temperature.
     values["eco_offset"] = history["input_number.eco_temp"].number(moment) - values["comfort_temp"]
+    # The recorded implementation had no low-load block.
+    values["low_load_block"] = False
     return Params(**values)
 
 

@@ -5,7 +5,8 @@ State kept between steps, each for a reason:
 - damped outdoor temperature (first-order lag),
 - integral of the room correction,
 - last forecast summary (result of a service call, not of an entity),
-- heating demand with its switching delay.
+- heating demand with its switching delay,
+- the low-load block (it releases at a higher flow than it blocks, so it needs its previous state).
 Everything else is recomputed from the current inputs on every call.
 """
 
@@ -42,7 +43,10 @@ class Snapshot:
     flow_raw: float | None
     demand_wanted: bool
     demand: bool
+    low_load: bool
+    """Space heating is blocked because the flow it needs is at the minimum."""
     flow: int | None
+    """Flow setpoint; 0 without demand or while blocked for low load."""
     room_targets: dict[str, float]
 
 
@@ -53,6 +57,7 @@ class ModelState:
     integral: float = 0.0
     forecast: weather.ForecastSummary | None = None
     demand: control.DelayedSwitch = field(default_factory=control.DelayedSwitch)
+    low_load: bool = False
 
     def as_dict(self) -> dict[str, Any]:
         forecast = None
@@ -72,6 +77,7 @@ class ModelState:
             "forecast": forecast,
             "demand": self.demand.state,
             "demand_pending_since": pending.isoformat() if pending else None,
+            "low_load": self.low_load,
         }
 
     @classmethod
@@ -97,6 +103,7 @@ class ModelState:
             integral=float(data.get("integral", 0.0)),
             forecast=forecast,
             demand=demand,
+            low_load=bool(data.get("low_load", False)),
         )
 
 
@@ -149,6 +156,10 @@ class Model:
                 step_min,
                 params,
             )
+
+        # The low-load block judges the flow after the integral step; it changes only once per step.
+        after = self.evaluate(inputs, now)
+        self.state.low_load = control.low_load(self.state.low_load, after.flow_raw, params)
         return self.evaluate(inputs, now)
 
     def evaluate(self, inputs: Inputs, now: datetime) -> Snapshot:
@@ -167,7 +178,8 @@ class Model:
 
         wanted = control.demand_wanted(inputs.enabled, switch_temp, params)
         demand = self.state.demand.update(wanted, now)
-        flow = control.flow_setpoint(demand, curve, room_correction, params)
+        low_load = demand and self.state.low_load
+        flow = control.flow_setpoint(demand and (not low_load), curve, room_correction, params)
         flow_raw = None
         if curve is not None:
             flow_raw = curve + room_correction
@@ -184,6 +196,7 @@ class Model:
             flow_raw=flow_raw,
             demand_wanted=wanted,
             demand=demand,
+            low_load=low_load,
             flow=flow,
             room_targets=targets,
         )

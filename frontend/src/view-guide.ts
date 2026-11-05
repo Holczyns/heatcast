@@ -138,6 +138,11 @@ const EN: Section[] = [
           pushes further into it.
         </li>
         <li>
+          <b>Low load:</b> when the flow the house needs falls to the <i>Minimum flow temperature</i>, space heating is
+          blocked so the boiler does not cycle. It runs again once that flow is 1 K above the minimum; meanwhile the flow
+          setpoint shows 0.
+        </li>
+        <li>
           <b>The room filter</b> passes temperature changes only up to a set speed, so an open window or a few people in a
           small room do not move the controller.
         </li>

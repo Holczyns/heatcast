@@ -9,9 +9,12 @@ from engine.control import (
     eco_shift,
     flow_setpoint,
     integrate,
+    low_load,
     proportional,
 )
+from engine.model import Inputs, Model, ModelState
 from engine.params import Params
+from engine.rooms import RoomConfig, RoomReading
 
 PARAMS = Params()
 NOW = datetime(2026, 10, 23, 12, 0, tzinfo=UTC)
@@ -101,3 +104,41 @@ def test_delayed_switch_restarts_after_flicker():
 
 def test_delayed_switch_takes_first_value():
     assert DelayedSwitch().update(True, NOW)
+
+
+def test_low_load_blocks_at_minimum_and_releases_one_kelvin_above():
+    assert low_load(False, 22.4, PARAMS) is False
+    assert low_load(False, 22.0, PARAMS) is True
+    assert low_load(True, 22.9, PARAMS) is True
+    assert low_load(True, 23.0, PARAMS) is False
+
+
+def test_low_load_off_or_without_flow():
+    assert low_load(True, 20.0, Params(low_load_block=False)) is False
+    assert low_load(True, None, PARAMS) is False
+
+
+def _model(room: float, blocked: bool) -> tuple[Model, Inputs]:
+    model = Model(Params(comfort_temp=21.0, curve_offset=-3.0), [RoomConfig(key="room")], ModelState(low_load=blocked))
+    inputs = Inputs(readings={"room": RoomReading(value=room)}, outdoor=10.0, comfort_active=True)
+    model.prime(inputs)
+    return model, inputs
+
+
+def test_model_blocks_warm_house_and_writes_no_flow():
+    model, inputs = _model(22.5, blocked=False)
+    snapshot = model.step(inputs, NOW)
+    assert snapshot.demand is True
+    assert snapshot.low_load is True
+    assert snapshot.flow == 0
+
+
+def test_model_releases_cold_house():
+    model, inputs = _model(19.5, blocked=True)
+    snapshot = model.step(inputs, NOW)
+    assert snapshot.low_load is False
+    assert snapshot.flow > 23
+
+
+def test_low_load_survives_restart():
+    assert ModelState.from_dict(ModelState(low_load=True).as_dict()).low_load is True

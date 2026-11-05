@@ -321,7 +321,7 @@ class HeatCastCoordinator(DataUpdateCoordinator[Snapshot]):
             control_active=self.control_active,
             test_mode=self.test_mode,
             test_flow=round(self.test_flow),
-            demand=snapshot.demand,
+            demand=snapshot.demand and (not snapshot.low_load),
             flow=snapshot.flow,
             has_block_switch=bool(block_entity),
             idle_flow=round(options.get(CONF_IDLE_FLOW, 0)),
