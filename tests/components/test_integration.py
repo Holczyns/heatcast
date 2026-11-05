@@ -368,3 +368,37 @@ async def test_lost_outdoor_sensor_is_reported_and_resolved(hass: HomeAssistant,
     assert hass.states.get(problem).state == "off"
     assert ir.async_get(hass).async_get_issue(DOMAIN, issue_id) is None
     assert notifications[-1].data["title"] == "HeatCast: resolved"
+
+
+async def test_low_load_sends_low_flow_then_switches_heating_off(hass: HomeAssistant, boiler) -> None:
+    entry = await run_wizard(hass)
+    hass.states.async_set("sensor.flow", "30.0", {"device_class": "temperature", "unit_of_measurement": "°C"})
+    hass.config_entries.async_update_entry(entry, data={**entry.data, "flow_sensor": "sensor.flow"})
+    await hass.async_block_till_done()
+    await hass.services.async_call(
+        "number", "set_value", {"entity_id": entity_id(hass, "number", "_curve_offset"), "value": -8}, blocking=True
+    )
+    await hass.services.async_call(
+        "switch", "turn_on", {"entity_id": entity_id(hass, "switch", "_control")}, blocking=True
+    )
+    mode = entity_id(hass, "sensor", "_mode")
+
+    # The curve now asks for less than the minimum: the boiler gets the low-load flow, heating stays on.
+    now = dt_util.utcnow().replace(second=0, microsecond=0)
+    step = now + timedelta(minutes=5 - now.minute % 5)
+    async_fire_time_changed(hass, step)
+    await hass.async_block_till_done()
+    async_fire_time_changed(hass, step + timedelta(seconds=30))
+    await hass.async_block_till_done()
+    assert hass.states.get(mode).state == "low_load"
+    assert float(hass.states.get(FLOW).state) == 10
+    assert hass.states.get(BLOCK).state == "off"
+
+    # The flow has cooled to the rooms: space heating is switched off.
+    hass.states.async_set("sensor.flow", "21.0", {"device_class": "temperature", "unit_of_measurement": "°C"})
+    async_fire_time_changed(hass, step + timedelta(minutes=5))
+    await hass.async_block_till_done()
+    async_fire_time_changed(hass, step + timedelta(minutes=5, seconds=30))
+    await hass.async_block_till_done()
+    assert hass.states.get(mode).state == "heating_off"
+    assert hass.states.get(BLOCK).state == "on"

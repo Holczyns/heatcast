@@ -27,7 +27,25 @@ CELSIUS = UnitOfTemperature.CELSIUS
 
 @dataclass(frozen=True, kw_only=True)
 class HeatCastSensorDescription(SensorEntityDescription):
-    value: Callable[[HeatCastCoordinator, Snapshot], float | datetime | None]
+    value: Callable[[HeatCastCoordinator, Snapshot], float | str | datetime | None]
+
+
+MODES = ["shadow", "test", "no_demand", "heating_off", "low_load", "heating"]
+
+
+def _mode(coordinator: HeatCastCoordinator, snapshot: Snapshot) -> str:
+    """What HeatCast asks of the boiler right now, in the order the output decides it."""
+    if not coordinator.control_active:
+        return "shadow"
+    if coordinator.test_mode:
+        return "test"
+    if not snapshot.demand:
+        return "no_demand"
+    if snapshot.pump_stop:
+        return "heating_off"
+    if snapshot.low_load:
+        return "low_load"
+    return "heating"
 
 
 def _outdoor(attribute: str) -> Callable[[HeatCastCoordinator, Snapshot], float | None]:
@@ -63,6 +81,12 @@ def _temperature(key: str, value, *, diagnostic: bool = False, delta: bool = Fal
 
 SENSORS: tuple[HeatCastSensorDescription, ...] = (
     _temperature("flow_setpoint", lambda _c, s: s.flow),
+    HeatCastSensorDescription(
+        key="mode",
+        device_class=SensorDeviceClass.ENUM,
+        options=MODES,
+        value=_mode,
+    ),
     _temperature("curve_flow", lambda _c, s: s.curve, diagnostic=True),
     _temperature("room_temperature", lambda _c, s: s.room.temperature),
     _temperature("setpoint", lambda _c, s: s.setpoint, diagnostic=True),
@@ -135,7 +159,7 @@ class HeatCastSensor(HeatCastEntity, SensorEntity):
         self.entity_description = description
 
     @property
-    def native_value(self) -> float | datetime | None:
+    def native_value(self) -> float | str | datetime | None:
         return self.entity_description.value(self.coordinator, self.coordinator.data)
 
 

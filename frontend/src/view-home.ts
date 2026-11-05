@@ -1,7 +1,7 @@
 import { LitElement, css, html, nothing, type TemplateResult } from "lit";
 import type { EntryInfo, RoomInfo } from "./api";
 import { type HomeAssistant, isOn, numberState } from "./ha";
-import { LANGUAGE, type Localize, formatNumber, formatSigned } from "./localize";
+import { LANGUAGE, type Localize, type TranslationKey, formatNumber, formatSigned } from "./localize";
 import { shared } from "./styles";
 
 const TARGET_STEP = 0.5;
@@ -97,10 +97,21 @@ export class HeatCastHome extends LitElement {
     `;
   }
 
+  private mode(): string | undefined {
+    const id = this.entry.entities.mode;
+    return id ? this.hass.states[id]?.state : undefined;
+  }
+
   private renderBoiler(): TemplateResult {
     const t = this.localize;
+    const s = this.entry.sources;
     const flow = this.num("flow_setpoint");
-    const measured = numberState(this.hass, this.entry.sources.flow_sensor ?? undefined);
+    const measured = numberState(this.hass, s.flow_sensor ?? undefined);
+    const accepted = numberState(this.hass, s.flow_entity ?? undefined);
+    const mode = this.mode();
+    const modeClass = mode === "heating" ? "heat" : mode === "low_load" || mode === "heating_off" ? "cold" : "";
+    const pump = s.pump_sensor ? isOn(this.hass, s.pump_sensor) : undefined;
+    const flame = s.flame_sensor ? isOn(this.hass, s.flame_sensor) : undefined;
     return html`
       <section class="card boiler">
         <h2><ha-icon icon="mdi:water-boiler"></ha-icon>${t("boiler")}</h2>
@@ -109,12 +120,31 @@ export class HeatCastHome extends LitElement {
             <span class="big">${this.fmt(flow, 0)}</span><span class="unit">°C</span>
             <div class="muted small">${t("flow_setpoint")}</div>
           </div>
+          ${accepted !== undefined
+            ? html`<div class="measured">
+                <span class="mid">${this.fmt(accepted, 0)} °C</span>
+                <div class="muted small">${t("flow_accepted")}</div>
+              </div>`
+            : nothing}
           ${measured !== undefined
             ? html`<div class="measured">
                 <span class="mid">${this.fmt(measured)} °C</span>
                 <div class="muted small">${t("flow_measured")}</div>
               </div>`
             : nothing}
+        </div>
+        <div class="chips">
+          ${mode ? html`<span class="chip ${modeClass}">${t(`mode.${mode}` as TranslationKey)}</span>` : nothing}
+          ${flame === undefined
+            ? nothing
+            : html`<span class="chip ${flame ? "heat" : ""}"
+                ><ha-icon class=${flame ? "flame" : ""} icon=${flame ? "mdi:fire" : "mdi:fire-off"}></ha-icon>${flame ? t("flame") : t("burner_off")}</span
+              >`}
+          ${pump === undefined
+            ? nothing
+            : html`<span class="chip ${pump ? "ok" : ""}"
+                ><ha-icon icon=${pump ? "mdi:pump" : "mdi:pump-off"}></ha-icon>${pump ? t("pump_on") : t("pump_off")}</span
+              >`}
         </div>
         <h3 class="muted small">${t("why_flow")}</h3>
         ${this.renderBreakdown()}
@@ -145,12 +175,20 @@ export class HeatCastHome extends LitElement {
           </div>`;
 
     const raw = curve !== undefined ? curve + (p ?? 0) + (integral ?? 0) : undefined;
+    const mode = this.mode();
     let limit: TemplateResult | typeof nothing = nothing;
     if (raw !== undefined && flowMin !== undefined && raw < flowMin) {
       limit = html`<div class="row note"><span>${t("limited_min")}</span><span></span><span class="value">${this.fmt(flowMin, 0)} °C</span></div>`;
     }
     if (raw !== undefined && flowMax !== undefined && raw > flowMax) {
       limit = html`<div class="row note"><span>${t("limited_max")}</span><span></span><span class="value">${this.fmt(flowMax, 0)} °C</span></div>`;
+    }
+    // Low load replaces the minimum: the boiler gets the low-load flow, or nothing once the pump stops.
+    if (mode === "low_load") {
+      limit = html`<div class="row note"><span>${t("low_load_note")}</span><span></span><span class="value">${this.fmt(flow, 0)} °C</span></div>`;
+    }
+    if (mode === "heating_off") {
+      limit = html`<div class="row note"><span>${t("pump_stop_note")}</span><span></span><span class="value">–</span></div>`;
     }
 
     return html`
@@ -164,7 +202,7 @@ export class HeatCastHome extends LitElement {
         </div>
         ${delta(t("p_term"), p)} ${delta(t("integral"), integral)} ${limit}
         <div class="row total result">
-          <span>${t("result")}</span><span></span><span class="value">${demand ? `${this.fmt(flow, 0)} °C` : "–"}</span>
+          <span>${t("result")}</span><span></span><span class="value">${demand && mode !== "heating_off" ? `${this.fmt(flow, 0)} °C` : "–"}</span>
         </div>
         ${demand ? nothing : html`<div class="muted small">${t("summer")}</div>`}
       </div>

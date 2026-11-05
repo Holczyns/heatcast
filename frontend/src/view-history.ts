@@ -106,6 +106,7 @@ function charts(entry: EntryInfo, t: Localize): ChartDefinition[] {
         { entity: e.demand, name: t("s.demand") },
         { entity: e.control, name: t("s.control") },
         { entity: s.flame_sensor, name: t("s.flame") },
+        { entity: s.pump_sensor, name: t("s.pump") },
         { entity: s.dhw_sensor, name: t("s.dhw") },
       ],
     },

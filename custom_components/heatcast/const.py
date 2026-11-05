@@ -12,6 +12,7 @@ CONF_BLOCK_ENTITY: Final = "block_entity"
 CONF_IDLE_FLOW: Final = "idle_flow"
 CONF_FLOW_SENSOR: Final = "flow_sensor"
 CONF_FLAME_SENSOR: Final = "flame_sensor"
+CONF_PUMP_SENSOR: Final = "pump_sensor"
 CONF_DHW_SENSOR: Final = "dhw_sensor"
 
 # Main entry: weather and schedule

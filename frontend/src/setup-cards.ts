@@ -19,6 +19,7 @@ const SOURCE_FIELDS: FieldDefinition[] = [
   { key: "block_entity", label: "src.block_entity", domains: ["switch", "input_boolean"], optional: true },
   { key: "flow_sensor", label: "src.flow_sensor", domains: ["sensor"], deviceClass: "temperature", optional: true },
   { key: "flame_sensor", label: "src.flame_sensor", domains: ["binary_sensor"], optional: true },
+  { key: "pump_sensor", label: "src.pump_sensor", domains: ["binary_sensor"], optional: true },
   { key: "dhw_sensor", label: "src.dhw_sensor", domains: ["binary_sensor"], optional: true },
   { key: "outdoor_sensor", label: "src.outdoor_sensor", domains: ["sensor"], deviceClass: "temperature", optional: false },
   { key: "weather", label: "src.weather", domains: ["weather"], optional: true },

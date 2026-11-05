@@ -40,6 +40,7 @@ from .const import (
     CONF_NOTIFY_SERVICE,
     CONF_OUTDOOR_SENSOR,
     CONF_PARAMS,
+    CONF_PUMP_SENSOR,
     CONF_SCHEDULE,
     CONF_SENSOR,
     CONF_VALVE,
@@ -90,6 +91,7 @@ BOILER_SCHEMA_KEYS = (
     CONF_IDLE_FLOW,
     CONF_FLOW_SENSOR,
     CONF_FLAME_SENSOR,
+    CONF_PUMP_SENSOR,
     CONF_DHW_SENSOR,
 )
 
@@ -104,6 +106,7 @@ def boiler_schema(defaults: dict[str, Any]) -> probatio.Schema:
             probatio.Required(CONF_IDLE_FLOW, default=defaults.get(CONF_IDLE_FLOW, 0)): _number(0, 40, 1, "°C"),
             _optional(CONF_FLOW_SENSOR, defaults): _entity("sensor", "temperature"),
             _optional(CONF_FLAME_SENSOR, defaults): _entity("binary_sensor"),
+            _optional(CONF_PUMP_SENSOR, defaults): _entity("binary_sensor"),
             _optional(CONF_DHW_SENSOR, defaults): _entity("binary_sensor"),
         }
     )
