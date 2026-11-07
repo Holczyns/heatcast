@@ -130,8 +130,9 @@ const EN: Section[] = [
         <li><b>Room deviation</b> is the weighted difference between targets and room temperatures. Positive means too cold.</li>
         <li><b>Proportional gain</b>: kelvin of flow per missing degree in the rooms (limited to ±3 K).</li>
         <li>
-          <b>Integral time</b>: the longer, the slower the integral removes a steady error (limited to ±3 K). A few hours
-          suit underfloor heating.
+          <b>Integral time</b>: the longer, the slower the integral removes a steady error (limited to ±3 K). Since the
+          integral counts at most 0.3 K of deviation, about 500 min suits underfloor heating: a steady curve error is
+          removed within a day, an afternoon of airing moves the integral by about half a kelvin.
         </li>
         <li>
           The integral holds without heating demand, without room readings, or when the flow is at a limit and the error
@@ -146,6 +147,11 @@ const EN: Section[] = [
           the <i>Low-load flow temperature</i>: the burner stays off and the pump keeps the floor water moving. Once the
           measured flow is within 2 K of the house temperature, space heating is switched off and the pump stops. Heating
           resumes once the flow the house needs is 2 K above the minimum.
+        </li>
+        <li>
+          <b>Short burner runs:</b> HeatCast sets the flow temperature, the boiler decides when the burner starts and
+          stops around it. If the burner runs only a few minutes at a time, raise the boiler's switch-off hysteresis (on
+          EMS boilers <i>Hysteresis off temperature</i>), so each run lasts longer.
         </li>
         <li>
           <b>The room filter</b> passes temperature changes only up to a set speed, so an open window or a few people in a
@@ -197,6 +203,10 @@ const EN: Section[] = [
         During the comfort schedule the house temperature applies. Outside it every target, rooms included, is lowered by
         the <b>eco setback</b>. With underfloor heating a setback above 1 K rarely pays off, since the screed reacts hours
         later.
+      </p>
+      <p>
+        With a setback the burner often stays off all night under low load, so the house really cools down. Start the
+        comfort schedule about two hours before the time the house should be warm.
       </p>
     `,
   },

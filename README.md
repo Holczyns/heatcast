@@ -40,6 +40,8 @@ It writes the result to any number entity your boiler reads, such as `selflowtem
 - **Radiator valves**: thermostatic valves get their room target, and optionally the room sensor value as an
   external temperature.
 - **Eco setback** applied outside a schedule.
+- **Low load**: when the house needs less than the minimum flow temperature, the burner stays off instead of
+  cycling, and space heating and the pump are switched off once the floor water has cooled to room level.
 - **Problem reporting**: a boiler that does not take the setpoint, lost room or outdoor sensors and an
   unusually high flow temperature show up on the Repairs page and on a problem sensor, and optionally as a
   notification through any notify service.
