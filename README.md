@@ -93,7 +93,8 @@ rooms ─► filter ─► weighted deviation ─► PI room correction ──�
 
 The heating curve is `T = T_set + (T_design − T_set) · r^(1/n) + offset`, where `r` is the heating load relative to
 the design outdoor temperature. The room correction is limited to ±3 K for each of the P and I terms, and the
-integral holds while there is no demand, no room data, or the output is already at a limit.
+integral holds while there is no demand, no room data, or the output is already at a limit. The integral counts
+at most 0.3 K of room error, so airing or a setpoint step is left to the P term and does not wind it up.
 
 When the flow the house needs (curve plus room correction) falls to the minimum flow temperature, the boiler cannot
 deliver less and would only cycle. HeatCast then sends the **low-load flow temperature** (10 °C by default): the

@@ -138,6 +138,10 @@ const EN: Section[] = [
           pushes further into it.
         </li>
         <li>
+          The integral counts at most <b>0.3 K</b> of room deviation. Airing or a setpoint change is left to the
+          proportional term, so the integral keeps correcting only the steady curve error.
+        </li>
+        <li>
           <b>Low load:</b> when the flow the house needs falls to the <i>Minimum flow temperature</i>, the boiler gets
           the <i>Low-load flow temperature</i>: the burner stays off and the pump keeps the floor water moving. Once the
           measured flow is within 2 K of the house temperature, space heating is switched off and the pump stops. Heating

@@ -57,7 +57,13 @@ def test_correction_needs_room_error():
 
 
 def test_integral_accumulates():
-    assert integrate(0.0, 1.0, True, 30.0, 5, PARAMS) == pytest.approx(0.06)
+    assert integrate(0.0, 0.2, True, 30.0, 5, PARAMS) == pytest.approx(0.012)
+
+
+def test_integral_counts_limited_error():
+    # airing: a large error advances the integral no faster than the error limit
+    assert integrate(0.0, 2.0, True, 30.0, 5, PARAMS) == pytest.approx(0.018)
+    assert integrate(0.0, -2.0, True, 30.0, 5, PARAMS) == pytest.approx(-0.018)
 
 
 def test_integral_locks():
@@ -66,7 +72,7 @@ def test_integral_locks():
     # output at minimum and room too warm: integrating further would wind up
     assert integrate(-1.0, -0.5, True, 22.0, 5, PARAMS) == -1.0
     # output at minimum but room too cold: allowed to recover
-    assert integrate(-1.0, 0.5, True, 22.0, 5, PARAMS) == pytest.approx(-0.97)
+    assert integrate(-1.0, 0.5, True, 22.0, 5, PARAMS) == pytest.approx(-0.982)
 
 
 def test_integral_is_limited():

@@ -5,7 +5,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime
 
-from .params import DEMAND_DELAY_S, INTEGRAL_LIMIT, LOW_LOAD_RELEASE_K, PROPORTIONAL_LIMIT, PUMP_STOP_MARGIN_K, Params
+from .params import (
+    DEMAND_DELAY_S,
+    INTEGRAL_ERROR_LIMIT,
+    INTEGRAL_LIMIT,
+    LOW_LOAD_RELEASE_K,
+    PROPORTIONAL_LIMIT,
+    PUMP_STOP_MARGIN_K,
+    Params,
+)
 
 
 def eco_shift(comfort_active: bool, params: Params) -> float:
@@ -52,7 +60,8 @@ def integrate(
     """Advance the integral one step unless one of the locks holds.
 
     Locks: no room error, no heating demand, or output saturated in the
-    direction the error pushes (anti-windup).
+    direction the error pushes (anti-windup). The error counted is limited to
+    INTEGRAL_ERROR_LIMIT: a large error is left to the P term.
     """
     if error is None:
         return integral
@@ -64,7 +73,8 @@ def integrate(
     if saturated_in_error_direction:
         return integral
 
-    integral_new = integral + params.kp / params.ti_min * error * step_min
+    error_counted = max(min(error, INTEGRAL_ERROR_LIMIT), -INTEGRAL_ERROR_LIMIT)
+    integral_new = integral + params.kp / params.ti_min * error_counted * step_min
     return round(max(min(integral_new, INTEGRAL_LIMIT), -INTEGRAL_LIMIT), 3)
 
 

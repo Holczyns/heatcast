@@ -16,6 +16,8 @@ FORECAST_MAX_AGE_S = 3 * 3600.0
 
 PROPORTIONAL_LIMIT = 3.0
 INTEGRAL_LIMIT = 3.0
+# The integral counts at most this much room error (K), so airing or a setpoint step cannot wind it up.
+INTEGRAL_ERROR_LIMIT = 0.3
 
 DEMAND_DELAY_S = 30 * 60.0
 
